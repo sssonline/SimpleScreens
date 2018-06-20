@@ -133,9 +133,9 @@ along with this software (see the LICENSE.md file). If not, see
                         <fo:table-cell width="0.3in" padding="${cellPadding}"><fo:block text-align="center">Sec</fo:block></fo:table-cell>
                         <fo:table-cell width="0.3in" padding="${cellPadding}"><fo:block text-align="center">Lev</fo:block></fo:table-cell>
                         <fo:table-cell width="0.3in" padding="${cellPadding}"><fo:block text-align="center">Pos</fo:block></fo:table-cell>
-                        <fo:table-cell width="0.6in" padding="${cellPadding}"><fo:block text-align="center">Cont</fo:block></fo:table-cell>
+                        <fo:table-cell width="0.8in" padding="${cellPadding}"><fo:block text-align="center">Cont</fo:block></fo:table-cell>
 
-                        <fo:table-cell width="3.0in" padding="${cellPadding}"><fo:block>Lot</fo:block></fo:table-cell>
+                        <fo:table-cell width="2.8in" padding="${cellPadding}"><fo:block>Lot</fo:block></fo:table-cell>
                         <fo:table-cell width="0.5in" padding="${cellPadding}"><fo:block text-align="center">Bin</fo:block></fo:table-cell>
                         <fo:table-cell width="0.5in" padding="${cellPadding}"><fo:block text-align="right">Quantity</fo:block></fo:table-cell>
                     </fo:table-header>
@@ -144,7 +144,7 @@ along with this software (see the LICENSE.md file). If not, see
                         <fo:table-row font-size="9pt" border-top="solid black">
                             <fo:table-cell padding="${cellPadding}" number-columns-spanned="4"><fo:block text-align="center">
                                 <fo:instream-foreign-object>
-                                    <barcode:barcode xmlns:barcode="http://barcode4j.krysalis.org/ns" message="${productInfo.productId}">
+                                    <barcode:barcode xmlns:barcode="http://barcode4j.krysalis.org/ns" message="${productInfo.pseudoId}">
                                         <barcode:code128>
                                             <barcode:height>0.4in</barcode:height>
                                             <barcode:module-width>0.25mm</barcode:module-width>
@@ -249,7 +249,7 @@ along with this software (see the LICENSE.md file). If not, see
             <fo:table-row font-size="9pt">
                 <fo:table-cell padding="${cellPadding}" number-columns-spanned="4"><fo:block text-align="center">
                     <fo:instream-foreign-object>
-                        <barcode:barcode xmlns:barcode="http://barcode4j.krysalis.org/ns" message="${productInfo.productId}">
+                        <barcode:barcode xmlns:barcode="http://barcode4j.krysalis.org/ns" message="${productInfo.pseudoId}">
                             <barcode:code128>
                                 <barcode:height>0.4in</barcode:height>
                                 <barcode:module-width>0.25mm</barcode:module-width>

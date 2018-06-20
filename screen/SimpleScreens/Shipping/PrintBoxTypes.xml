@@ -13,8 +13,13 @@ along with this software (see the LICENSE.md file). If not, see
 <http://creativecommons.org/publicdomain/zero/1.0/>.
 -->
 <screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-2.1.xsd"
-        default-menu-title="Picklists" default-menu-index="3" menu-image="/ssstatic/images/Picking.png">
+        default-menu-include="false" standalone="true">
 
-    <subscreens default-item="FindPicklist"/>
-    <widgets><subscreens-panel id="PicklistPanel" type="tab"/></widgets>
+    <actions>
+        <entity-find entity-name="mantle.shipment.ShipmentBoxTypeDetail" list="boxTypeList"><order-by field-name="pseudoId"/></entity-find>
+    </actions>
+    <widgets>
+        <render-mode><text type="xsl-fo" location="component://SimpleScreens/template/shipment/ShipmentBoxTypes.xsl-fo.ftl"
+                template="true" encode="false" no-boundary-comment="true"/></render-mode>
+    </widgets>
 </screen>

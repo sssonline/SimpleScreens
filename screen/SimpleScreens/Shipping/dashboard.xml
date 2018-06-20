@@ -17,6 +17,7 @@ along with this software (see the LICENSE.md file). If not, see
 
     <transition name="findOrder"><default-response url="//${appRoot}/Order/FindOrder"/></transition>
     <transition name="packShipment"><default-response url="//${appRoot}/Shipping/PackShipment"/></transition>
+    <transition name="selectAsset"><default-response url="//${appRoot}/Asset/SelectAsset"/></transition>
 
     <actions>
         <entity-find entity-name="moqui.basic.EnumGroupMember" list="productItemTypeEgms" cache="true">
@@ -25,17 +26,27 @@ along with this software (see the LICENSE.md file). If not, see
         <!-- Reservation Summary -->
         <entity-find entity-name="mantle.facility.FacilityShippingReservationSummary" list="fsrsList">
             <econdition field-name="partStatusId" value="OrderApproved"/>
+            <select-field field-name="facilityId,shipmentMethodEnumId,quantity,quantityNotAvailable,quantityNotIssued"/>
+        </entity-find>
+        <!-- Reservation Summary for Pick Locations -->
+        <entity-find entity-name="mantle.facility.FacilityShippingReservationSummary" list="fsrsPickList">
+            <econdition field-name="partStatusId" value="OrderApproved"/>
+            <econdition field-name="locationTypeEnumId" value="FltPick"/>
+            <select-field field-name="facilityId,shipmentMethodEnumId,quantity,quantityNotAvailable,quantityNotIssued"/>
         </entity-find>
     </actions>
     <widgets>
         <container-row><row-col md="6">
+            <link url="../Picklist" text="Picklists"/>
+            <link url="../PickLocationMoves" text="Pick Location Moves"/>
+            <link url="selectAsset" text="Move Assets"/>
+            <link url="../BoxTypes" text="Box Types"/>
+        </row-col><row-col md="6">
             <form-single name="PackShipmentForm" transition="packShipment" focus-field="shipmentId">
                 <field name="shipmentId"><default-field title=""><text-line size="20"/></default-field></field>
                 <field name="packButton"><default-field title="Pack Shipment"><submit/></default-field></field>
                 <field-layout><field-row-big><field-ref name="shipmentId"/><field-ref name="packButton"/></field-row-big></field-layout>
             </form-single>
-        </row-col><row-col md="6">
-            <link url="../Picklist" text="Picklists"/>
         </row-col></container-row>
 
         <form-list name="FacilitySummary" list="facilitySummaryList" skip-form="true" paginate-always-show="false">
@@ -52,6 +63,10 @@ along with this software (see the LICENSE.md file). If not, see
                     <field-map field-name="enumId" from="shipmentMethodEnumId"/></entity-find-one>
                 <!-- Reservation Summary -->
                 <set field="resSummary" from="fsrsList.find({ it.facilityId == facilityId &amp;&amp; it.shipmentMethodEnumId == shipmentMethodEnumId })"/>
+                <set field="resPickSummary" from="fsrsPickList.find({ it.facilityId == facilityId &amp;&amp; it.shipmentMethodEnumId == shipmentMethodEnumId })"/>
+
+                <set field="resQuantity" from="resSummary?.quantity ?: 0.0"/>
+                <set field="resPickQuantity" from="resPickSummary?.quantity ?: 0.0"/>
             </row-actions>
 
             <field name="pseudoId">
@@ -66,13 +81,15 @@ along with this software (see the LICENSE.md file). If not, see
                     parameter-map="[orderType:'Sales', statusId:'OrderApproved', facilityId:facilityId, shipmentMethodEnumId:shipmentMethodEnumId]"/></default-field></field>
 
             <!-- reserved, not available, not issued -->
-            <field name="resQuantity" from="resSummary?.quantity"><default-field title="Res Qty"><display/></default-field></field>
+            <field name="resQuantity"><default-field title="Res Qty"><display/></default-field></field>
             <field name="quantityNotAvailable" from="resSummary?.quantityNotAvailable"><default-field title="Not Avail">
                 <display/></default-field></field>
             <field name="quantityNotIssued" from="resSummary?.quantityNotIssued"><default-field title="Not Issued">
                 <display/></default-field></field>
 
-            <!-- TODO: quantity by location type -->
+            <!-- quantity in Pick locations -->
+            <field name="resPickQuantity"><default-field title="Pick Loc Qty"><display style="${(resPickQuantity == resQuantity) ? 'text-success' : 'text-danger'}"/></default-field></field>
+
             <!-- TODO: quantity on shipment/picklist -->
         </form-list>
     </widgets>

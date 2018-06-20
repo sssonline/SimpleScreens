@@ -50,7 +50,7 @@ along with this software (see the LICENSE.md file). If not, see
                 header-dialog="true" select-columns="true" saved-finds="true">
             <entity-find entity-name="mantle.order.OrderPartFindView" list="orderList">
                 <search-form-inputs default-order-by="shipmentMethodSequenceNum,placedDate,orderId,orderPartSeqId"
-                        skip-fields="vendorRoleTypeId,customerRoleTypeId,customerClassificationId,itemTypeEnumId,orderType,facilityId">
+                        skip-fields="vendorRoleTypeId,customerRoleTypeId,customerClassificationId,itemTypeEnumId,orderType,facilityId,workEffortId">
                     <default-parameters statusId="OrderApproved"/></search-form-inputs>
                 <!-- NOTE: note limiting by date, ie placedDate_poffset="-3" placedDate_period="30d" -->
                 <date-filter from-field-name="customerClassFromDate" thru-field-name="customerClassThruDate" ignore="!customerClassificationId"/>
@@ -83,12 +83,20 @@ along with this software (see the LICENSE.md file). If not, see
                     <econdition field-name="orderId"/><econdition field-name="orderPartSeqId"/>
                     <select-field field-name="partyId,pseudoId,firstName,lastName,organizationName,description"/>
                 </entity-find>
+                <!-- Pick vs other location reservations - single value, could be optimized with sub-select -->
+                <entity-find entity-name="mantle.product.issuance.AssetAndReservationSummary" list="resPickLocList">
+                    <econdition field-name="orderId"/><econdition field-name="orderPartSeqId"/>
+                    <econdition field-name="locationTypeEnumId" value="FltPick"/>
+                    <select-field field-name="quantity"/>
+                </entity-find>
+                <set field="resPickLocQuantity" from="resPickLocList.first()?.quantity ?: 0.0"/>
+                <set field="_rowSubmit" from="(resPickLocQuantity == quantityTotal) ? 'true' : 'false'"/>
             </row-actions>
 
             <hidden-parameters><parameter name="workEffortId"/></hidden-parameters>
 
             <field name="_useRowSubmit"><default-field><hidden default-value="true"/></default-field></field>
-            <field name="_rowSubmit"><default-field title="Add"><check all-checked="true"><option key="true" text=" "/></check></default-field></field>
+            <field name="_rowSubmit"><default-field title="Add"><check><option key="true" text=" "/></check></default-field></field>
             <field name="binLocationNumber"><header-field title="Pick Bin #" show-order-by="true"/>
                 <default-field><text-line size="3"/></default-field></field>
 
@@ -141,6 +149,7 @@ along with this software (see the LICENSE.md file). If not, see
                 </header-field>
                 <default-field container-style="text-strong"><display-entity entity-name="moqui.basic.StatusItem"/></default-field>
             </field>
+            <!-- NOTE: generally always in the same facility as the picklist but allow exceptions -->
             <field name="facilityId"><header-field title="Facility" show-order-by="true">
                 <drop-down allow-empty="true"><dynamic-options transition="getFacilityList" server-search="true" min-length="0"
                         parameter-map="[facilityTypeEnumId:'FcTpWarehouse']"/></drop-down>
@@ -209,6 +218,8 @@ along with this software (see the LICENSE.md file). If not, see
             <field name="quantityTotal" align="right">
                 <header-field show-order-by="true" title="Quantity Total"><range-find/></header-field>
                 <default-field><display/></default-field></field>
+            <field name="resPickLocQuantity" align="right">
+                <default-field title="Pick Loc Qty"><display style="text-strong ${(resPickLocQuantity == quantityTotal) ? 'text-success' : 'text-danger'}"/></default-field></field>
             <field name="findQuantity"><header-field title="Item Quantity"><range-find/></header-field></field>
 
             <field name="purchaseItemTypeEnumId"><header-field title="Purchase Item Type">
@@ -253,7 +264,8 @@ along with this software (see the LICENSE.md file). If not, see
                 <field-ref name="productStoreId"/></form-list-column>
             <form-list-column><field-ref name="vendorPartyId"/><field-ref name="customerPartyId"/>
                 <field-ref name="otherParties"/></form-list-column>
-            <form-list-column><field-ref name="partTotal"/><field-ref name="quantityTotal"/></form-list-column>
+            <form-list-column><field-ref name="partTotal"/><field-ref name="quantityTotal"/>
+                <field-ref name="resPickLocQuantity"/></form-list-column>
             <form-list-column><field-ref name="submitButton"/></form-list-column>
         </form-list>
     </widgets>
