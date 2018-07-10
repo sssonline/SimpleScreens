@@ -46,8 +46,8 @@ along with this software (see the LICENSE.md file). If not, see
     </actions>
     <widgets>
         <container>
-            <link url="PostedBalanceSummaryExport.csv" text="Get as CSV" expand-transition-url="false"/>
-            <link url="PostedBalanceSummaryExport.xml" text="Get as XML" expand-transition-url="false"/>
+            <link url="PostedBalanceSummaryExport.csv" text="CSV" expand-transition-url="false"/>
+            <link url="PostedBalanceSummaryExport.xml" text="XML" expand-transition-url="false"/>
         </container>
         <form-list name="ResultList" skip-form="true" list="resultList" show-csv-button="true">
             <row-actions>
