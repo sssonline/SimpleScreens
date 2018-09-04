@@ -19,7 +19,7 @@ along with this software (see the LICENSE.md file). If not, see
 
     <transition name="updateOrderHeader"><service-call name="mantle.order.OrderServices.update#OrderHeader"/>
         <default-response url="."/></transition>
-    <transition name="placeOrder"><service-call name="mantle.order.OrderServices.place#Order"/>
+    <transition name="placeOrder"><service-call name="mantle.order.OrderServices.place#Order" in-map="context + [requireInventory:false]"/>
         <default-response url="."/></transition>
     <transition name="approveOrder"><service-call name="mantle.order.OrderServices.approve#Order"/>
         <default-response url="."/></transition>
@@ -173,7 +173,7 @@ along with this software (see the LICENSE.md file). If not, see
                         <link url="placeOrder" text="Place Order Anyway" link-type="hidden-form"/>
                     </container-dialog>
                 </widgets></section>
-                <section name="ApproveSection" condition="orderHeader.statusId  in ['OrderPlaced', 'OrderProcessing', 'OrderHold']"><widgets>
+                <section name="ApproveSection" condition="orderHeader.statusId in ['OrderPlaced', 'OrderProcessing', 'OrderHold']"><widgets>
                     <link url="approveOrder" text="Approve" link-type="hidden-form" style="btn-success"
                             condition="ec.user.hasPermission('ORDER_APPROVE') &amp;&amp; !approveWarnings"/>
                     <container-dialog id="ApproveOrderDialog" button-text="Approve Warnings" condition="approveWarnings" type="success">
@@ -532,7 +532,8 @@ along with this software (see the LICENSE.md file). If not, see
                                     <drop-down><dynamic-options transition="getFacilityList" server-search="true" min-length="0"
                                             parameter-map="[facilityTypeEnumId:'FcTpWarehouse']"/></drop-down>
                                 </default-field></field>
-                                <field name="shipBeforeDate"><default-field><date-time/></default-field></field>
+                                <field name="shipAfterDate"><default-field title="Ship After"><date-time/></default-field></field>
+                                <field name="shipBeforeDate"><default-field title="Ship Before"><date-time/></default-field></field>
                                 <field name="estimatedShipDate"><default-field title="Estimated Ship"><date-time/></default-field></field>
                                 <field name="estimatedDeliveryDate"><default-field title="Estimated Delivery"><date-time/></default-field></field>
                                 <field name="otherPartyOrderId"><default-field title="Their Order ID"><text-line size="40"/></default-field></field>
@@ -555,7 +556,8 @@ along with this software (see the LICENSE.md file). If not, see
                             <form-single name="EditPartNonEdForm" transition="updateOrderPart" map="orderPart">
                                 <field name="orderId"><default-field><hidden/></default-field></field>
                                 <field name="orderPartSeqId"><default-field><hidden/></default-field></field>
-                                <field name="shipBeforeDate"><default-field><date-time/></default-field></field>
+                                <field name="shipAfterDate"><default-field title="Ship After"><date-time/></default-field></field>
+                                <field name="shipBeforeDate"><default-field title="Ship Before"><date-time/></default-field></field>
                                 <field name="estimatedShipDate"><default-field title="Estimated Ship"><date-time/></default-field></field>
                                 <field name="estimatedDeliveryDate"><default-field title="Delivery Date"><date-time/></default-field></field>
                                 <field name="otherPartyOrderId"><default-field title="Their Order ID"><text-line size="40"/></default-field></field>
@@ -586,9 +588,6 @@ along with this software (see the LICENSE.md file). If not, see
                         </form-single>
                     </container-dialog>
 
-                    <link url="completeOrderPart" text="Complete Part" link-type="hidden-form"
-                            parameter-map="[orderPartSeqId:orderPart.orderPartSeqId]"
-                            condition="orderPartInfo.orderPart.statusId in ['OrderApproved', 'OrderSent']"/>
                     <link url="invoiceOrderPart" text="Create Invoice" link-type="hidden-form"
                             parameter-map="[orderPartSeqId:orderPart.orderPartSeqId]"
                             condition="quantityNotBilledByPart.get(orderPartInfo.orderPart.orderPartSeqId)"/>
@@ -600,6 +599,17 @@ along with this software (see the LICENSE.md file). If not, see
                     <container type="dl" style="dl-horizontal">
                         <label text="Part Total" type="dt"/>
                         <label text="${ec.l10n.formatCurrency(orderPartInfo.orderPart.partTotal ?: 0, orderHeader?.currencyUomId)}" type="dd"/>
+                        <label text="Part Status" type="dt"/>
+                        <container type="dd">
+                            <label text="${orderPartInfo.partStatusItem?.description ?: ''}"/>
+                            <link url="approveOrder" text="Approve Part" link-type="hidden-form-link"
+                                    condition="orderHeader.statusId == 'OrderApproved' &amp;&amp; orderPartInfo.orderPart.statusId in ['OrderPlaced', 'OrderProcessing', 'OrderHold'] &amp;&amp; ec.user.hasPermission('ORDER_APPROVE')"
+                                    parameter-map="[orderId:orderId, orderPartSeqId:orderPartInfo.orderPart.orderPartSeqId]"/>
+                            <link url="completeOrderPart" text="Complete Part" link-type="hidden-form-link"
+                                    parameter-map="[orderId:orderId, orderPartSeqId:orderPart.orderPartSeqId]"
+                                    condition="orderPartInfo.orderPart.statusId in ['OrderApproved', 'OrderSent']"
+                                    confirmation="Force complete order part? This normally happens automatically and only when all items are shipped."/>
+                        </container>
                         <label text="Customer" type="dt"/>
                         <container type="dd">
                             <link url="editParty" text="PartyNameTemplate" text-map="orderPartInfo.customerDetail"
@@ -624,16 +634,22 @@ along with this software (see the LICENSE.md file). If not, see
                         </container>
                         <label text="Ship Method" type="dt"/>
                         <label text="${orderPartInfo.shipmentMethodEnum?.description ?: ''}" type="dd"/>
+                        <label text="Ship After" type="dt" condition="orderPartInfo.orderPart.shipAfterDate"/>
+                        <label text="${ec.l10n.format(orderPartInfo.orderPart.shipAfterDate, 'yyyy-MM-dd HH:mm') ?: '\u00a0'}" type="dd"
+                                condition="orderPartInfo.orderPart.shipAfterDate"/>
                         <label text="Ship Before" type="dt"/>
                         <label text="${ec.l10n.format(orderPartInfo.orderPart.shipBeforeDate, 'yyyy-MM-dd HH:mm') ?: '\u00a0'}" type="dd"/>
-                        <label text="Delivery Date" type="dt"/>
-                        <label text="${ec.l10n.format(orderPartInfo.orderPart.estimatedDeliveryDate, 'yyyy-MM-dd HH:mm') ?: '\u00a0'}" type="dd"/>
-                        <label text="Pick Up Date" type="dt"/>
-                        <label text="${ec.l10n.format(orderPartInfo.orderPart.estimatedPickUpDate, 'yyyy-MM-dd HH:mm') ?: '\u00a0'}" type="dd"/>
+                        <label text="Delivery Date" type="dt" condition="orderPartInfo.orderPart.estimatedDeliveryDate"/>
+                        <label text="${ec.l10n.format(orderPartInfo.orderPart.estimatedDeliveryDate, 'yyyy-MM-dd HH:mm') ?: '\u00a0'}" type="dd"
+                                condition="orderPartInfo.orderPart.estimatedDeliveryDate"/>
+                        <label text="Pick Up Date" type="dt" condition="orderPartInfo.orderPart.estimatedPickUpDate"/>
+                        <label text="${ec.l10n.format(orderPartInfo.orderPart.estimatedPickUpDate, 'yyyy-MM-dd HH:mm') ?: '\u00a0'}" type="dd"
+                                condition="orderPartInfo.orderPart.estimatedPickUpDate"/>
                         <label text="Other Party Order ID" type="dt"/>
                         <label text="${orderPartInfo.orderPart.otherPartyOrderId ?: '\u00a0'}" type="dd"/>
-                        <label text="Other Party Order Date" type="dt"/>
-                        <label text="${ec.l10n.format(orderPartInfo.orderPart.otherPartyOrderDate, 'yyyy-MM-dd HH:mm') ?: '\u00a0'}" type="dd"/>
+                        <label text="Other Party Order Date" type="dt" condition="orderPartInfo.orderPart.otherPartyOrderDate"/>
+                        <label text="${ec.l10n.format(orderPartInfo.orderPart.otherPartyOrderDate, 'yyyy-MM-dd HH:mm') ?: '\u00a0'}" type="dd"
+                                condition="orderPartInfo.orderPart.otherPartyOrderDate"/>
                         <section name="DuplicatesByOtherPartyOrderIdSection" condition="orderPartInfo.duplicateOrderPartList"><widgets>
                             <label text="Duplicate Order Parts" type="dt" style="text-danger"/>
                             <label text="${orderPartInfo.duplicateOrderPartList.collect({ it.orderId + ':' + it.orderPartSeqId }).join(', ')}" type="dd" style="text-danger"/>
@@ -838,6 +854,7 @@ along with this software (see the LICENSE.md file). If not, see
                         <field name="orderId"><default-field><hidden/></default-field></field>
                         <field name="orderPartSeqId" from="orderPartInfo.orderPart.orderPartSeqId"><default-field><hidden/></default-field></field>
                         <field name="updateExisting"><default-field><hidden default-value="false"/></default-field></field>
+                        <field name="requireInventory"><default-field><hidden default-value="false"/></default-field></field>
 
                         <field name="assetClassEnumId"><default-field title="Asset Class">
                             <drop-down allow-empty="true" no-current-selected-key="AsClsInventoryFin">
@@ -885,6 +902,7 @@ along with this software (see the LICENSE.md file). If not, see
                     <form-single name="AddOtherItemForm" transition="createItem" focus-field="itemTypeEnumId">
                         <field name="orderId"><default-field><hidden/></default-field></field>
                         <field name="orderPartSeqId" from="orderPartInfo.orderPart.orderPartSeqId"><default-field><hidden/></default-field></field>
+                        <field name="requireInventory"><default-field><hidden default-value="false"/></default-field></field>
 
                         <field name="parentItemSeqId"><default-field title="Parent Item"><drop-down allow-empty="true">
                             <list-options list="applicableParentItems" key="${orderItemSeqId}" text="${orderItemSeqId} - ${itemDescription}"/>
@@ -980,7 +998,11 @@ along with this software (see the LICENSE.md file). If not, see
                             <set field="newerThanExpireDate" from="issuanceLotList[0].expirationDate ?: issuanceLotList[0].expectedEndOfLife"/></if>
                     </if>
                 </row-actions>
-                <field name="orderId"><default-field><hidden/></default-field></field>
+
+                <hidden-parameters>
+                    <parameter name="orderId"/>
+                    <parameter name="requireInventory" value="false"/>
+                </hidden-parameters>
 
                 <field name="orderItemSeqId"><default-field title="Item" container-style="${parentItemSeqId ? 'text-info' : ''}"><display/></default-field></field>
                 <field name="orderPartSeqId" align="center">
@@ -1089,7 +1111,8 @@ along with this software (see the LICENSE.md file). If not, see
                     <conditional-field condition="orderItem.productId &amp;&amp; orderPartInfo.isVendorInternalOrg">
                         <section-iterate name="ReservationInfoSection" list="resInfoList" entry="resInfo"><widgets><container>
                             <link url="assetDetail" text="Asset ${resInfo.existingRes.assetId}" parameter-map="[assetId:resInfo.existingRes.assetId]" link-type="anchor"/>
-                            <label text=" Res: ${ec.l10n.format(resInfo.existingRes.quantity, null)}, Not Avail: ${ec.l10n.format(resInfo.existingRes.quantityNotAvailable, null)}, Not Issued: ${ec.l10n.format(resInfo.existingRes.quantityNotIssued, null)}" type="span"/>
+                            <label text=" - Res: ${ec.l10n.format(resInfo.existingRes.quantity, null)}, Not Avail: ${ec.l10n.format(resInfo.existingRes.quantityNotAvailable, null)}, Not Issued: ${ec.l10n.format(resInfo.existingRes.quantityNotIssued, null)}"
+                                    type="span" style="${resInfo.existingRes.quantityNotAvailable ? 'text-danger' : ''}"/>
                             <container>
                                 <label text="Lot" type="strong" condition="resInfo.assetLot?.lotId"/>
                                 <label text="${ec.resource.expand('LotNameTemplate', '', resInfo.assetLot)}" condition="resInfo.assetLot?.lotId"/>
