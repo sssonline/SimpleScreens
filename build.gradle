@@ -22,6 +22,7 @@ def frameworkDir = file(moquiDir.absolutePath + '/framework')
 repositories {
     flatDir name: 'localLib', dirs: frameworkDir.absolutePath + '/lib'
     jcenter()
+    maven { url "http://jcenter.bintray.com" } // backup in case https://jcenter.bintray.com does not work via jcenter
 }
 
 // Log4J has annotation processors, disable to avoid warning
