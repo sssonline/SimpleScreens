@@ -42,8 +42,10 @@ along with this software (see the LICENSE.md file). If not, see
             <if condition="productStore != null">
                 <entity-find-one entity-name="mantle.party.PartyDetail" value-field="orgParty">
                     <field-map field-name="partyId" from="productStore.organizationPartyId"/></entity-find-one>
-                <script>ec.web.sendJsonResponse([[value:orgParty.partyId, label:ec.resource.expand("PartyNameTemplate", "", orgParty)]])</script>
-                <return/>
+                <if condition="orgParty != null">
+                    <script>ec.web.sendJsonResponse([[value:orgParty.partyId, label:ec.resource.expand("PartyNameTemplate", "", orgParty)]])</script>
+                    <return/>
+                </if>
             </if>
         </if>
         <entity-find entity-name="mantle.party.PartyDetailAndRole" list="partyList">
@@ -70,8 +72,20 @@ along with this software (see the LICENSE.md file). If not, see
         <set field="vendorRole" value="Supplier,Vendor,VendorBillFrom"/>
         <set field="customerRole" value="Customer,CustomerBillTo"/>
 
+        <!-- default store, make sure exists (and exists for this user) -->
         <set field="defaultProductStoreId" from="ec.user.getPreference('OrderSalesStoreDefault')"/>
+        <if condition="defaultProductStoreId">
+            <entity-find-one entity-name="mantle.product.store.ProductStore" value-field="defaultProductStore">
+                <field-map field-name="productStoreId" from="defaultProductStoreId"/></entity-find-one>
+            <if condition="defaultProductStore == null"><set field="defaultProductStoreId" from="null"/></if>
+        </if>
+        <!-- default facility, make sure exists (and exists for this user) -->
         <set field="defaultFacilityId" from="ec.user.getPreference('FacilityGeneralDefault')"/>
+        <if condition="defaultFacilityId">
+            <entity-find-one entity-name="mantle.facility.Facility" value-field="defaultFacility">
+                <field-map field-name="facilityId" from="defaultFacilityId"/></entity-find-one>
+            <if condition="defaultFacility == null"><set field="defaultFacilityId" from="null"/></if>
+        </if>
     </actions>
     <widgets>
         <container-row><row-col md="5">
@@ -135,7 +149,7 @@ along with this software (see the LICENSE.md file). If not, see
                 <search-form-inputs default-order-by="-entryDate,orderId,orderPartSeqId"
                         skip-fields="vendorRoleTypeId,customerRoleTypeId,customerClassificationId,itemTypeEnumId,orderType">
                     <!-- NOTE: OrderOpen no longer included by default to exclude shopping cart orders (salesChannelEnumId == 'ScWeb') -->
-                    <default-parameters statusId="OrderPlaced,OrderApproved,OrderHold" statusId_op="in"
+                    <default-parameters partStatusId="OrderPlaced,OrderApproved,OrderHold" partStatusId_op="in"
                             entryDate_poffset="-3" entryDate_period="30d"/></search-form-inputs>
                 <date-filter from-field-name="customerClassFromDate" thru-field-name="customerClassThruDate" ignore="!customerClassificationId"/>
                 <econdition field-name="vendorRoleTypeId" value="OrgInternal" ignore="!'sales'.equalsIgnoreCase(orderType)"/>
@@ -145,7 +159,12 @@ along with this software (see the LICENSE.md file). If not, see
                 <econdition field-name="productId" operator="in" from="findProductId" ignore-if-empty="true"/>
                 <econdition field-name="quantity" operator="greater-equals" from="findQuantity_from" ignore-if-empty="true"/>
                 <econdition field-name="quantity" operator="less-equals" from="findQuantity_thru" ignore-if-empty="true"/>
-                <select-field field-name="orderPartSeqId"/>
+                <having-econditions>
+                    <econdition field-name="issuedQuantity" operator="greater" from="0.0" ignore="onlyPartlyShipped != 'true'"/>
+                    <econdition field-name="quantityNotAvailable" operator="greater" from="0.0" ignore="onlyInventoryUnavailable != 'true'"/>
+                </having-econditions>
+                <!-- NOTE: always need to select issuedQuantity,quantityNotAvailable if having conditions are used (EntityFindBuilder doesn't yet add these to sub-select automatically) -->
+                <select-field field-name="orderPartSeqId,issuedQuantity,quantityNotAvailable"/>
             </entity-find>
             <row-actions>
                 <!-- Customer Classification -->
@@ -163,10 +182,24 @@ along with this software (see the LICENSE.md file). If not, see
                     <econdition field-name="orderId"/><econdition field-name="orderPartSeqId"/>
                     <select-field field-name="partyId,pseudoId,firstName,lastName,organizationName,description"/>
                 </entity-find>
+                <!-- Total Quantity: query separate if findQuantity_from || findQuantity_thru, will be wrong if there are items filtered by this constraint -->
+                <if condition="findQuantity_from || findQuantity_thru">
+                    <entity-find entity-name="mantle.order.OrderItemSummary" list="totalQtyList">
+                        <econdition field-name="orderId"/><econdition field-name="orderPartSeqId"/>
+                        <select-field field-name="quantity"/>
+                    </entity-find>
+                    <if condition="totalQtyList"><set field="quantityTotal" from="totalQtyList[0].quantity"/></if>
+                </if>
             </row-actions>
 
             <field name="orderType"><header-field><radio no-current-selected-key="Any">
                 <option key="Any"/><option key="Sales"/><option key="Purchase"/></radio></header-field></field>
+            <field name="onlyPartlyShipped"><header-field title="Shipped">
+                <check><option key="true" text="Only Partly Shipped"/></check>
+            </header-field></field>
+            <field name="onlyInventoryUnavailable"><header-field title="Inventory">
+                <check><option key="true" text="Only with Unavailable"/></check>
+            </header-field></field>
 
             <field name="orderId"><header-field title="Order" show-order-by="true"><text-find size="20" hide-options="true"/></header-field>
                 <default-field><link text="${orderId}:${orderPartSeqId}" url="orderDetail" link-type="anchor" condition="orderId"/></default-field></field>
@@ -191,7 +224,7 @@ along with this software (see the LICENSE.md file). If not, see
             <field name="shipBeforeDate"><header-field show-order-by="true"><date-period/></header-field>
                 <default-field><display/></default-field></field>
 
-            <field name="statusId">
+            <field name="partStatusId">
                 <header-field title="Status" show-order-by="true">
                     <widget-template-include location="component://webroot/template/screen/BasicWidgetTemplates.xml#statusDropDown">
                         <set field="statusTypeId" value="OrderHeader"/><set field="allowMultiple" value="true"/></widget-template-include>
@@ -266,6 +299,20 @@ along with this software (see the LICENSE.md file). If not, see
                 </header-field>
                 <default-field><display-entity entity-name="moqui.basic.Enumeration"/></default-field>
             </field>
+            <field name="carrierPartyId"><header-field title="Carrier">
+                <drop-down allow-multiple="true" show-not="true">
+                    <option key="_NA_" text="N/A"/>
+                    <entity-options key="${partyId}" text="PartyNameTemplate">
+                        <entity-find entity-name="mantle.party.PartyDetailAndRole">
+                            <econdition field-name="roleTypeId" value="Carrier"/>
+                            <econdition field-name="disabled" value="N" or-null="true"/>
+                            <order-by field-name="organizationName,firstName"/>
+                        </entity-find>
+                    </entity-options>
+                </drop-down>
+            </header-field><default-field>
+                <display-entity entity-name="mantle.party.Party" text="${carrierPartyId == '_NA_' ? 'N/A' : pseudoId}"/>
+            </default-field></field>
             <field name="shipments"><default-field>
                 <section-iterate name="ShipmentListSection" list="oissList" entry="oiss"><widgets><container>
                     <link url="shipmentDetail" link-type="anchor" text="${oiss.shipmentId}" parameter-map="[shipmentId:oiss.shipmentId]"/>
@@ -275,11 +322,21 @@ along with this software (see the LICENSE.md file). If not, see
 
             <field name="partTotal" align="right" show-total="sum">
                 <header-field show-order-by="true" title="Total"><range-find/></header-field>
-                <default-field><display currency-unit-field="currencyUomId"/></default-field></field>
+                <default-field><display currency-unit-field="currencyUomId"/></default-field>
+            </field>
             <field name="quantityTotal" align="right" show-total="sum">
                 <header-field show-order-by="true" title="Quantity Total"><range-find/></header-field>
-                <default-field><display/></default-field></field>
+                <default-field><display/></default-field>
+            </field>
             <field name="findQuantity"><header-field title="Item Quantity"><range-find/></header-field></field>
+            <field name="quantityNotAvailable" align="right" show-total="sum">
+                <header-field show-order-by="true" title="Not Avail"/>
+                <default-field container-style="${quantityNotAvailable ? 'text-danger' : ''}"><display/></default-field>
+            </field>
+            <field name="issuedQuantity" align="right" show-total="sum">
+                <header-field show-order-by="true" title="Shipped"/>
+                <default-field><display/></default-field>
+            </field>
 
             <field name="purchaseItemTypeEnumId"><header-field title="Purchase Item Type">
                 <drop-down allow-multiple="true">
@@ -312,12 +369,14 @@ along with this software (see the LICENSE.md file). If not, see
                 <field-ref name="salesChannelEnumId"/></form-list-column>
             <form-list-column><field-ref name="entryDate"/><field-ref name="placedDate"/>
                 <field-ref name="shipBeforeDate"/></form-list-column>
-            <form-list-column><field-ref name="statusId"/><field-ref name="facilityId"/>
+            <form-list-column><field-ref name="partStatusId"/><field-ref name="facilityId"/>
                 <field-ref name="productStoreId"/></form-list-column>
             <form-list-column><field-ref name="vendorPartyId"/><field-ref name="customerPartyId"/>
                 <field-ref name="otherParties"/></form-list-column>
-            <form-list-column><field-ref name="shipmentMethodEnumId"/><field-ref name="shipments"/></form-list-column>
-            <form-list-column><field-ref name="partTotal"/><field-ref name="quantityTotal"/></form-list-column>
+            <form-list-column><field-ref name="shipmentMethodEnumId"/><field-ref name="carrierPartyId"/>
+                <field-ref name="shipments"/></form-list-column>
+            <form-list-column><field-ref name="partTotal"/><field-ref name="quantityTotal"/>
+                <field-ref name="quantityNotAvailable"/><!-- <field-ref name="issuedQuantity"/> --></form-list-column>
             <form-list-column><field-ref name="submitButton"/></form-list-column>
         </form-list>
     </widgets>
