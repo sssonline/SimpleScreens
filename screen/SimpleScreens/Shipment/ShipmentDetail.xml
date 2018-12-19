@@ -19,11 +19,12 @@ along with this software (see the LICENSE.md file). If not, see
 
     <transition name="packShipmentScreen"><default-response url="//${appRoot}/Shipping/PackShipment"/></transition>
     <transition name="orderDetail"><default-response url="//${appRoot}/Order/OrderDetail"/></transition>
+    <transition name="editReturn"><default-response url="//${appRoot}/Return/EditReturn"/></transition>
     <transition name="editInvoice"><default-response url="//${appRoot}/Accounting/Invoice/EditInvoice"/></transition>
     <transition name="editPayment"><default-response url="//${appRoot}/Accounting/Payment/EditPayment"/></transition>
     <transition name="editTransaction"><default-response url="//${appRoot}/Accounting/Transaction/EditTransaction"/></transition>
     <transition name="assetDetail"><default-response url="//${appRoot}/Asset/AssetDetail"/></transition>
-    <transition name="picklistDetail"><default-response url="//${appRoot}/Picking/PicklistDetail"/></transition>
+    <transition name="picklistDetail"><default-response url="//${appRoot}/Shipping/Picklist/PicklistDetail"/></transition>
 
     <transition name="editFacility"><default-response url="//${appRoot}/Facility/EditFacility"/></transition>
     <transition name="editParty"><default-response url="//${appRoot}/Party/EditParty"/></transition>
@@ -376,6 +377,8 @@ along with this software (see the LICENSE.md file). If not, see
 
             <section-iterate name="OrderLinks" list="orderIdSet" entry="orderId"><widgets>
                 <link url="orderDetail" text="Order ${orderId}" link-type="anchor-button"/></widgets></section-iterate>
+            <section-iterate name="ReturnLinks" list="returnIdSet" entry="returnId"><widgets>
+                <link url="editReturn" text="Return ${returnId}" link-type="anchor-button"/></widgets></section-iterate>
             <section-iterate name="InvoiceLinks" list="invoiceIdSet" entry="invoiceId"><widgets>
                 <link url="editInvoice" text="Invoice ${invoiceId}" link-type="anchor-button"/></widgets></section-iterate>
             <!-- no value in this as shown in better context in issuance or receipt list:
@@ -408,11 +411,6 @@ along with this software (see the LICENSE.md file). If not, see
                         <display text="${ec.entity.formatFieldString(changedEntityName, changedFieldName, newValueText)}"/></default-field></field>
                 </form-list>
             </container-dialog>
-
-            <container type="dl" style="dl-horizontal">
-                <label text="Shipping Gateway" type="dt" condition="shippingGatewayConfig != null"/>
-                <label text="${shippingGatewayConfig.description}" type="dd" condition="shippingGatewayConfig != null"/>
-            </container>
 
             <!-- Address Selection - Outgoing -->
             <section name="PostalAddressSelectDestSection" condition="isOutgoing &amp;&amp; (allowUpdate || shipment.statusId in ['ShipPacked', 'ShipShipped'])"><widgets>
@@ -504,6 +502,13 @@ along with this software (see the LICENSE.md file). If not, see
                     </container>
                 </widgets></section>
             </fail-widgets></section>
+
+            <container type="dl" style="dl-horizontal">
+                <label text="Shipping Gateway" type="dt" condition="shippingGatewayConfig != null"/>
+                <label text="${shippingGatewayConfig.description}" type="dd" condition="shippingGatewayConfig != null"/>
+                <label text="Order Ship By" type="dt"/>
+                <label text="${orderCarrierShipmentMethod?.description ? orderCarrierShipmentMethod.description : (orderCarrierDetail ? orderCarrierDetail.pseudoId : 'N/A') + ' ' + (orderShipmentMethodEnum ? orderShipmentMethodEnum.description : 'None')}" type="dd"/>
+            </container>
 
             <!-- Main/Header Form -->
             <form-single name="EditShipment" transition="updateShipment" map="shipment">
