@@ -33,7 +33,7 @@ along with this software (see the LICENSE.md file). If not, see
             <fo:table table-layout="fixed" width="7.5in" border="none"><fo:table-body>
                 <fo:table-row>
                     <fo:table-cell width="3in" padding="2pt" border="solid black">
-                        <fo:block font-size="8pt" text-align="center">Team</fo:block>
+                        <fo:block font-size="8pt" text-align="center">${ec.l10n.localize("Team")}</fo:block>
                         <fo:block font-size="12pt" text-align="center">${ec.resource.expand('PartyNameTemplate', '', teamDetail)}</fo:block>
                     </fo:table-cell>
                     <fo:table-cell width="3in" padding="2pt" border="solid black">
@@ -47,7 +47,7 @@ along with this software (see the LICENSE.md file). If not, see
                 </fo:table-row>
                 <fo:table-row>
                     <fo:table-cell padding="2pt" border="solid black" number-rows-spanned="2">
-                        <fo:block font-size="8pt" text-align="center">Team</fo:block>
+                        <fo:block font-size="8pt" text-align="center">${ec.l10n.localize("Team")}</fo:block>
                         <fo:block text-align="center">
                             <fo:instream-foreign-object>
                                 <barcode:barcode xmlns:barcode="http://barcode4j.krysalis.org/ns" message="${partyId}">
@@ -110,7 +110,7 @@ along with this software (see the LICENSE.md file). If not, see
         <fo:flow flow-name="xsl-region-body">
             <fo:table table-layout="fixed" width="7.5in" border-bottom="solid black">
                 <fo:table-header font-size="10pt" font-weight="bold" border-bottom="solid black">
-                    <fo:table-cell width="3in" padding="${cellPadding}"><fo:block text-align="left">Team Member</fo:block></fo:table-cell>
+                    <fo:table-cell width="3in" padding="${cellPadding}"><fo:block text-align="left">${ec.l10n.localize("Team")} Member</fo:block></fo:table-cell>
                     <fo:table-cell width="1.5in" padding="${cellPadding}"><fo:block text-align="center">Work Type</fo:block></fo:table-cell>
                     <fo:table-cell width="0.75in" padding="${cellPadding}"><fo:block text-align="center">Start</fo:block></fo:table-cell>
                     <fo:table-cell width="0.75in" padding="${cellPadding}"><fo:block text-align="center">End</fo:block></fo:table-cell>
