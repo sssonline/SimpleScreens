@@ -21,7 +21,8 @@ along with this software (see the LICENSE.md file). If not, see
         <default-response url="../EditPayment"/></transition>
 
     <transition name="editParty"><default-response url="//${appRoot}/Party/EditParty"/></transition>
-    <transition-include name="searchPartyList" location="component://SimpleScreens/template/party/PartyForms.xml"/>
+    <!--<transition-include name="searchPartyList" location="component://SimpleScreens/template/party/PartyForms.xml"/>-->
+    <transition-include name="getPartyList" location="component://basalt/template/party/PartyTransitions.xml"/>
 
     <actions>
         <if condition="'incoming'.equalsIgnoreCase(paymentType)"><then><set field="toRoleTypeId" value="OrgInternal"/></then>
