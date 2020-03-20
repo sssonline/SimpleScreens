@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-This software is in the public domain under CC0 1.0 Universal plus a 
+This software is in the public domain under CC0 1.0 Universal plus a
 Grant of Patent License.
 
 To the extent possible under law, the author(s) have dedicated all
@@ -65,9 +65,12 @@ along with this software (see the LICENSE.md file). If not, see
                     <label text="to ${ec.resource.expand('PartyNameTemplate','',toParty)}" type="strong"/>
                     <label text="at ${ec.l10n.format(commEvent?.entryDate, 'yyyy-MM-dd HH:mm')}" type="strong"/>
                 </container>
+
                 <section-include name="StatusChangeSection" location="component://SimpleScreens/template/basic/StatusWidgets.xml"/>
 
-                <label text="${commEvent.body}" type="pre"/>
+                <container >
+                    <label text="${commEvent.body}" encode="false" type="pre"/>
+                </container>
             </box-body>
         </container-box>
     </widgets>
