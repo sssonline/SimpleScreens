@@ -206,11 +206,7 @@ along with this software (see the LICENSE.md file). If not, see
                     <fo:block margin-top="0.2in" linefeed-treatment="preserve"><@encodeText orderPartInfo.orderPart.shippingInstructions/></fo:block>
                 </#if>
                 <#if (orderNoteList?size > 0)>
-                    <#if (orderNoteList?size == 1)>
-                        <fo:block margin-top="0.2in" font-weight="bold">Order Note</fo:block>
-                    <#else>
-                        <fo:block margin-top="0.2in" font-weight="bold">Order Notes</fo:block>
-                    </#if>
+                    <fo:block margin-top="0.2in" font-weight="bold">Order Note<#if (orderNoteList?size > 1)>s</#if></fo:block>
                     <#list orderNoteList as orderNote>
                         <fo:block margin-top="0.2in" linefeed-treatment="preserve"><@encodeText orderNote.noteText/></fo:block>
                     </#list>
