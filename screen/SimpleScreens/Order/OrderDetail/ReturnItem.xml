@@ -12,11 +12,13 @@ You should have received a copy of the CC0 Public Domain Dedication
 along with this software (see the LICENSE.md file). If not, see
 <http://creativecommons.org/publicdomain/zero/1.0/>.
 -->
-<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-2.1.xsd"
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.xsd"
         default-menu-include="false" standalone="true">
 
     <parameter name="orderId" required="true"/>
     <parameter name="orderItemSeqId" required="true"/>
+    <parameter name="pageIndex"/>
+
     <transition name="addOrderItemToReturn"><service-call name="mantle.order.ReturnServices.add#OrderItemToReturn"/>
         <default-response url=".."/></transition>
 
@@ -30,6 +32,8 @@ along with this software (see the LICENSE.md file). If not, see
     <widgets>
         <form-single name="ReturnItem" transition="addOrderItemToReturn">
             <field name="orderId"><default-field><hidden/></default-field></field>
+            <field name="pageIndex"><default-field><hidden/></default-field></field>
+
             <field name="orderItemSeqId"><default-field title="Item"><display/></default-field></field>
             <field name="itemTypeEnumId" from="orderItem.itemTypeEnumId"><default-field title="Type">
                 <display-entity entity-name="moqui.basic.Enumeration"/></default-field></field>
@@ -66,7 +70,7 @@ along with this software (see the LICENSE.md file). If not, see
                 <text-line size="6"/></conditional-field></field>
             <field name="inventoryStatusId"><conditional-field title="Inventory Status" condition="returnableOut.isProductItemType">
                 <widget-template-include location="component://webroot/template/screen/BasicWidgetTemplates.xml#statusDropDown">
-                    <set field="statusTypeId" value="Asset"/><set field="noCurrentSelectedKey" value="AstAvailable"/></widget-template-include>
+                    <set field="statusTypeId" value="Asset"/><set field="noCurrentSelectedKey" value="AstReturned"/></widget-template-include>
             </conditional-field></field>
             <field name="returnPrice" from="returnableOut.returnableTotal"><conditional-field title="Refund Amount" condition="!returnableOut.isProductItemType">
                 <text-line size="6"/></conditional-field></field>
@@ -80,7 +84,7 @@ along with this software (see the LICENSE.md file). If not, see
                     <set field="enumTypeId" value="ReturnResponse"/><set field="style" value=" "/></widget-template-include>
             </default-field></field>
             <field name="responseImmediate"><default-field title="Immediate?">
-                <drop-down><option key="N"/><option key="Y"/></drop-down></default-field></field>
+                <drop-down><option key="N" text="N - On Received"/><option key="Y" text="Y - On Approved"/></drop-down></default-field></field>
 
             <field name="submitButton"><default-field title="Add to Return"><submit/></default-field></field>
 

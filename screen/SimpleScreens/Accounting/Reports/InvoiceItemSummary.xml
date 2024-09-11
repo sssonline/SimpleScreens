@@ -12,7 +12,7 @@ You should have received a copy of the CC0 Public Domain Dedication
 along with this software (see the LICENSE.md file). If not, see
 <http://creativecommons.org/publicdomain/zero/1.0/>.
 -->
-<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-2.1.xsd"
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.xsd"
         default-menu-title="Invoice Item Summary" default-menu-include="false">
 
     <transition name="editProduct"><default-response url="//${appRoot}/Catalog/Product/EditProduct"/></transition>
@@ -28,8 +28,8 @@ along with this software (see the LICENSE.md file). If not, see
     </actions>
     <widgets>
         <form-list name="InvoiceItemSummary" list="summaryList" skip-form="true" header-dialog="true"
-                   saved-finds="true" select-columns="true" show-csv-button="true" show-all-button="true">
-            <entity-find entity-name="mantle.account.invoice.InvoiceItemSummary" list="summaryList">
+                   saved-finds="true" select-columns="true" show-csv-button="true" show-xlsx-button="true" show-all-button="true">
+            <entity-find entity-name="mantle.account.invoice.InvoiceItemSummary" list="summaryList" use-clone="true">
                 <search-form-inputs default-order-by="itemTypeEnumId,productId" skip-fields="fromRoleTypeId,toRoleTypeId">
                     <default-parameters statusId="InvoiceApproved,InvoicePmtSent,InvoiceFinalized,InvoiceSent,InvoiceAcked,InvoicePmtRecvd"
                             statusId_op="in" invoiceDate_poffset="-1" invoiceDate_period="month"/></search-form-inputs>
@@ -38,7 +38,10 @@ along with this software (see the LICENSE.md file). If not, see
             </entity-find>
 
             <field name="invoiceType"><header-field title="AR/AP"><radio><option key="Receivable"/><option key="Payable"/></radio></header-field></field>
-            <field name="invoiceDate"><header-field title="Invoice Date"><date-period/></header-field></field>
+
+            <field name="invoiceId"><header-field show-order-by="true"/><default-field><display/></default-field></field>
+            <field name="invoiceDate"><header-field show-order-by="true"><date-period/></header-field>
+                <default-field><display/></default-field></field>
 
             <field name="fromPartyId">
                 <header-field title="From"><drop-down allow-empty="true">
@@ -72,7 +75,7 @@ along with this software (see the LICENSE.md file). If not, see
             </field>
 
             <field name="itemTypeEnumId">
-                <header-field title="Item Type" show-order-by="true"><drop-down allow-empty="true" allow-multiple="true">
+                <header-field title="Item Type" show-order-by="true"><drop-down allow-empty="true" allow-multiple="true" show-not="true">
                     <entity-options key="${enumId}" text="${description}"><entity-find entity-name="moqui.basic.EnumAndGroup">
                         <econdition field-name="enumGroupEnumId" operator="in" from="['EngItemsSales', 'EngItemsPurchase']"/>
                         <order-by field-name="description"/></entity-find></entity-options>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-This software is in the public domain under CC0 1.0 Universal plus a 
+This software is in the public domain under CC0 1.0 Universal plus a
 Grant of Patent License.
 
 To the extent possible under law, the author(s) have dedicated all
@@ -12,7 +12,7 @@ You should have received a copy of the CC0 Public Domain Dedication
 along with this software (see the LICENSE.md file). If not, see
 <http://creativecommons.org/publicdomain/zero/1.0/>.
 -->
-<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-2.1.xsd"
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.xsd"
         default-menu-title="Product Store" default-menu-index="1">
 
     <parameter name="productStoreId" required="true"/>
@@ -22,6 +22,8 @@ along with this software (see the LICENSE.md file). If not, see
     <transition name="editPaymentGateway"><default-response url="//${appRoot}/Gateway/EditPaymentGateway"/></transition>
 
     <transition name="updateStore"><service-call name="update#mantle.product.store.ProductStore"/>
+        <default-response url="."/></transition>
+    <transition name="cloneProductStore"><service-call name="mantle.product.StoreServices.clone#ProductStore"/>
         <default-response url="."/></transition>
 
     <transition name="createShippingOption"><service-call name="mantle.product.StoreServices.create#StoreShippingOption"/>
@@ -33,11 +35,21 @@ along with this software (see the LICENSE.md file). If not, see
 
     <transition name="createShippingGateway"><service-call name="create#mantle.product.store.ProductStoreShippingGateway"/>
         <default-response url="."/></transition>
+    <transition name="updateShippingGateway"><service-call name="update#mantle.product.store.ProductStoreShippingGateway"/>
+        <default-response url="."/></transition>
     <transition name="deleteShippingGateway"><service-call name="delete#mantle.product.store.ProductStoreShippingGateway"/>
         <default-response url="."/></transition>
+
     <transition name="createPaymentGateway"><service-call name="create#mantle.product.store.ProductStorePaymentGateway"/>
         <default-response url="."/></transition>
     <transition name="deletePaymentGateway"><service-call name="delete#mantle.product.store.ProductStorePaymentGateway"/>
+        <default-response url="."/></transition>
+
+    <transition name="createStoreDataDocument"><service-call name="create#mantle.product.store.ProductStoreDataDocument"/>
+        <default-response url="."/></transition>
+    <transition name="updateStoreDataDocument"><service-call name="update#mantle.product.store.ProductStoreDataDocument"/>
+        <default-response url="."/></transition>
+    <transition name="deleteStoreDataDocument"><service-call name="delete#mantle.product.store.ProductStoreDataDocument"/>
         <default-response url="."/></transition>
 
     <transition-include name="getFacilityList" location="component://SimpleScreens/template/facility/FacilityTransitions.xml"/>
@@ -52,12 +64,33 @@ along with this software (see the LICENSE.md file). If not, see
         <order-map-list list="localeStringList"><order-by field-name="name"/></order-map-list>
     </actions>
     <widgets>
-        <container-row><row-col lg="7">
+        <container-row><row-col lg="5">
+            <container-dialog id="CloneProductStoreDialog" button-text="Clone Store">
+                <form-single name="CloneProductStoreForm" transition="cloneProductStore">
+                    <field name="baseProductStoreId" from="productStoreId"><default-field><hidden/></default-field></field>
+                    <field name="productStoreId"><default-field title="New ID"><text-line size="10"/></default-field></field>
+                    <field name="storeName"><default-field title="New Name"><text-line size="50"/></default-field></field>
+
+                    <field name="copyCategories"><default-field><radio no-current-selected-key="true">
+                        <option key="true" text="Yes"/><option key="false" text="No"/></radio></default-field></field>
+                    <field name="copyEmails"><default-field><radio no-current-selected-key="true">
+                        <option key="true" text="Yes"/><option key="false" text="No"/></radio></default-field></field>
+                    <field name="copyFacilities"><default-field><radio no-current-selected-key="true">
+                        <option key="true" text="Yes"/><option key="false" text="No"/></radio></default-field></field>
+                    <field name="copyParties"><default-field><radio no-current-selected-key="true">
+                        <option key="true" text="Yes"/><option key="false" text="No"/></radio></default-field></field>
+                    <field name="copyProducts"><default-field><radio no-current-selected-key="true">
+                        <option key="true" text="Yes"/><option key="false" text="No"/></radio></default-field></field>
+                    <field name="copySettings"><default-field><radio no-current-selected-key="true">
+                        <option key="true" text="Yes"/><option key="false" text="No"/></radio></default-field></field>
+
+                    <field name="submitButton"><default-field title="Clone"><submit/></default-field></field>
+                </form-single>
+            </container-dialog>
+
             <form-single name="EditStoreForm" map="store" transition="updateStore">
-                <field name="productStoreId"><default-field title="Product Store ID">
-                    <display text="${productStoreId}"/>
-                </default-field></field>
-                <field name="storeName"><default-field title="Name"><text-line size="30"/></default-field></field>
+                <field name="productStoreId"><default-field title="Product Store ID"><display/></default-field></field>
+                <field name="storeName"><default-field title="Name"><text-line size="50"/></default-field></field>
                 <field name="organizationPartyId"><default-field title="Organization">
                     <drop-down allow-empty="true">
                         <entity-options key="${partyId}" text="PartyNameTemplate"><entity-find entity-name="mantle.party.PartyDetailAndRole">
@@ -89,7 +122,24 @@ along with this software (see the LICENSE.md file). If not, see
                     </entity-options></drop-down>
                 </default-field></field>
                 <field name="requireInventory"><default-field title="Require Inventory">
-                    <drop-down allow-empty="true"><option key="Y"/><option key="N"/></drop-down>
+                    <radio no-current-selected-key="N"><option key="Y"/><option key="N"/></radio></default-field></field>
+                <field name="defaultDisablePromotions"><default-field>
+                    <radio no-current-selected-key="N"><option key="Y"/><option key="N"/></radio></default-field></field>
+                <field name="defaultDisableShippingCalc"><default-field>
+                    <radio no-current-selected-key="N"><option key="Y"/><option key="N"/></radio></default-field></field>
+                <field name="defaultDisableTaxCalc"><default-field>
+                    <radio no-current-selected-key="N"><option key="Y"/><option key="N"/></radio></default-field></field>
+
+                <field name="markupOrderShipLabels"><default-field title="Markup Order Shipping Price">
+                    <radio no-current-selected-key="N"><option key="Y"/><option key="N"/></radio></default-field></field>
+                <field name="markupShipmentShipLabels"><default-field>
+                    <radio no-current-selected-key="N"><option key="Y"/><option key="N"/></radio></default-field></field>
+                <field name="shipmentAnyCarrierMethod"><default-field title="Any Carrier Method?"
+                        tooltip="Set to Y to show all Carrier Shipment Methods on Shipments instead of only Shipping Options for this Store">
+                    <radio no-current-selected-key="N"><option key="Y"/><option key="N"/></radio></default-field></field>
+                <field name="insurancePackageThreshold"><default-field title="Insurance Threshold"
+                        tooltip="Buy insurance on packages where total cost of contents is above this amount">
+                    <text-line size="10" format="#,##0.00"/>
                 </default-field></field>
 
                 <field name="autoApproveDelay"><default-field tooltip="Delay in minutes, set to 0 to try auto-approve immediately when placed">
@@ -142,9 +192,9 @@ along with this software (see the LICENSE.md file). If not, see
 
                 <field name="submitButton"><default-field title="Update"><submit/></default-field></field>
             </form-single>
-        </row-col>
 
-        <row-col lg="5">
+        </row-col><row-col lg="7">
+
             <section name="ShippingOptionsSection">
                 <widgets>
                     <container-box><box-header title="Shipping Options"/><box-toolbar>
@@ -178,9 +228,13 @@ along with this software (see the LICENSE.md file). If not, see
                             <field name="description"><default-field title="Shipment Method">
                                 <display text="${description ? description : (carrierPartyId != '_NA_' ? (carrierPseudoId + ' - ') : '') + shipmentMethodDescription}"/>
                             </default-field></field>
-                            <field name="sequenceNum"><default-field title="Seq"><text-line size="3" format="#"/></default-field></field>
+                            <field name="sequenceNum"><default-field title="Sequence"><text-line size="3" format="#"/></default-field></field>
+                            <field name="markupPercent"><default-field title="Markup %" tooltip="Label cost markup as percent of carrier rate">
+                                <text-line size="4" format="0.0"/></default-field></field>
+                            <field name="markupAmount"><default-field title="Markup Amt" tooltip="Label cost markup as a fixed amount">
+                                <text-line size="4" format="0.00"/></default-field></field>
                             <field name="deleteButton" align="right"><default-field title="">
-                                <link url="deleteShippingOption" icon="glyphicon glyphicon-trash"
+                                <link url="deleteShippingOption" icon="fa fa-trash"
                                       parameter-map="[productStoreId:productStoreId, carrierPartyId:carrierPartyId, shipmentMethodEnumId:shipmentMethodEnumId]"
                                       confirmation="Are you sure you want to remove this Shipping Option?"/>
                             </default-field></field>
@@ -191,11 +245,6 @@ along with this software (see the LICENSE.md file). If not, see
             </section>
 
             <section name="ShippingGatewaysSection">
-                <actions>
-                    <entity-find entity-name="mantle.product.store.ProductStoreShippingGateway" list="shippingGatewayList">
-                        <econdition field-name="productStoreId" value="${productStoreId}" />
-                    </entity-find>
-                </actions>
                 <widgets>
                     <container-box>
                         <box-header title="Shipping Gateways"/>
@@ -216,26 +265,78 @@ along with this software (see the LICENSE.md file). If not, see
                                         </entity-find>
                                     </entity-options></drop-down>
                                 </default-field></field>
+
+                                <field name="billingType"><default-field><drop-down allow-empty="true">
+                                    <option key="SENDER" text="Sender"/><option key="RECIPIENT" text="Recipient"/>
+                                    <option key="THIRD_PARTY" text="Third Party"/>
+                                </drop-down></default-field></field>
+                                <field name="billingAccount"><default-field><text-line size="40"/></default-field></field>
+                                <field name="billingCountry"><default-field><drop-down allow-empty="true">
+                                    <entity-options key="${geoCodeAlpha2}" text="${geoCodeAlpha2} - ${geoName}">
+                                        <entity-find entity-name="moqui.basic.Geo">
+                                            <order-by field-name="geoCodeAlpha2"/>
+                                        </entity-find>
+                                    </entity-options>
+                                </drop-down></default-field></field>
+                                <field name="billingZip"><default-field><text-line size="10"/></default-field></field>
+
+                                <field name="insurancePercent"><default-field title="Insurance Percent"
+                                        tooltip="Record estimated cost of insurance using this percentage of the insured amount">
+                                    <text-line size="6"/>
+                                </default-field></field>
                                 <field name="submitButton"><default-field title="Create"><submit/></default-field></field>
                             </form-single>
                         </container-dialog></box-toolbar>
                         <box-body>
-                            <form-list name="ShippingGatewaysForm" list="shippingGatewayList" >
-                                <field name="carrierPartyId">
-                                    <header-field title="Carrier" />
-                                    <default-field>
-                                        <link url="editParty" text="PartyNameTemplate" entity-name="mantle.party.PartyDetail" parameter-map="[partyId:carrierPartyId]" link-type="anchor"/>
-                                    </default-field>
-                                </field>
-                                <field name="shippingGatewayConfigId">
-                                    <header-field title="Shipment Gateway" />
-                                    <default-field><link url="editShippingGateway" entity-name="mantle.shipment.carrier.ShippingGatewayConfig" text="${description}" link-type="anchor"/></default-field>
-                                </field>
+                            <form-list name="ShippingGatewaysForm" list="shippingGatewayList" transition="updateShippingGateway">
+                                <entity-find entity-name="mantle.product.store.ProductStoreShippingGateway" list="shippingGatewayList">
+                                    <econdition field-name="productStoreId"/>
+                                    <select-field field-name="productStoreId,carrierPartyId,shippingGatewayConfigId"/>
+                                </entity-find>
+                                <hidden-parameters><parameter name="productStoreId"/></hidden-parameters>
+
+                                <field name="carrierPartyId"><default-field title="Carrier">
+                                    <display text=" "/>
+                                    <link url="editParty" text="PartyNameTemplate" entity-name="mantle.party.PartyDetail" parameter-map="[partyId:carrierPartyId]" link-type="anchor"/>
+                                </default-field></field>
+                                <field name="shippingGatewayConfigId"><default-field title="Shipment Gateway">
+                                    <display text=" "/>
+                                    <link url="editShippingGateway" entity-name="mantle.shipment.carrier.ShippingGatewayConfig" text="${description}" link-type="anchor"/>
+                                </default-field></field>
+
+                                <field name="billingType"><default-field><drop-down allow-empty="true">
+                                    <option key="SENDER" text="Sender"/><option key="RECIPIENT" text="Recipient"/>
+                                    <option key="THIRD_PARTY" text="Third Party"/>
+                                </drop-down></default-field></field>
+                                <field name="billingAccount"><default-field><text-line size="25"/></default-field></field>
+                                <field name="billingCountry"><default-field><drop-down allow-empty="true">
+                                    <entity-options key="${geoCodeAlpha2}" text="${geoCodeAlpha2} - ${geoName}">
+                                        <entity-find entity-name="moqui.basic.Geo">
+                                            <econdition field-name="geoTypeEnumId" value="GEOT_COUNTRY"/>
+                                            <order-by field-name="geoCodeAlpha2"/>
+                                        </entity-find>
+                                    </entity-options>
+                                </drop-down></default-field></field>
+                                <field name="billingZip"><default-field><text-line size="10"/></default-field></field>
+
+                                <field name="insurancePercent"><default-field title="Ins. Percent"
+                                        tooltip="Record estimated cost of insurance using this percentage of the insured amount">
+                                    <text-line size="6"/>
+                                </default-field></field>
+                                <field name="submitButton"><default-field title=""><submit text="Update"/></default-field></field>
                                 <field name="deleteButton" align="right"><default-field title="">
-                                    <link url="deleteShippingGateway" icon="glyphicon glyphicon-trash"
-                                          parameter-map="[productStoreId:productStoreId, carrierPartyId:carrierPartyId, shippingGatewayConfigId:shippingGatewayConfigId]"
+                                    <link url="deleteShippingGateway" icon="fa fa-trash"
+                                          parameter-map="[productStoreId:productStoreId, carrierPartyId:carrierPartyId]"
                                           confirmation="Are you sure you want to remove this Shipping Gateway?"/>
                                 </default-field></field>
+
+                                <columns>
+                                    <column><field-ref name="carrierPartyId"/><field-ref name="shippingGatewayConfigId"/></column>
+                                    <column><field-ref name="billingCountry"/><field-ref name="billingAccount"/></column>
+                                    <column><field-ref name="billingZip"/><field-ref name="billingType"/></column>
+                                    <column><field-ref name="insurancePercent"/></column>
+                                    <column><field-ref name="submitButton"/><field-ref name="deleteButton"/></column>
+                                </columns>
                             </form-list>
                         </box-body>
                     </container-box>
@@ -245,7 +346,7 @@ along with this software (see the LICENSE.md file). If not, see
             <section name="PaymentGatewaysSection">
                 <actions>
                     <entity-find entity-name="mantle.product.store.ProductStorePaymentGateway" list="storePaymentGateway">
-                        <econdition field-name="productStoreId" value="${productStoreId}" />
+                        <econdition field-name="productStoreId"/>
                     </entity-find>
                 </actions>
                 <widgets>
@@ -282,7 +383,7 @@ along with this software (see the LICENSE.md file). If not, see
                                     <default-field><link url="editPaymentGateway" entity-name="mantle.account.method.PaymentGatewayConfig" text="${description}" link-type="anchor"/></default-field>
                                 </field>
                                 <field name="deleteButton" align="right"><default-field title="">
-                                    <link url="deletePaymentGateway" icon="glyphicon glyphicon-trash"
+                                    <link url="deletePaymentGateway" icon="fa fa-trash"
                                           parameter-map="[productStoreId:productStoreId, paymentInstrumentEnumId:paymentInstrumentEnumId, paymentGatewayConfigId:paymentGatewayConfigId]"
                                           confirmation="Are you sure you want to remove this Payment Gateway?"/>
                                 </default-field></field>
@@ -291,6 +392,51 @@ along with this software (see the LICENSE.md file). If not, see
                     </container-box>
                 </widgets>
             </section>
+
+            <section name="StoreDataDocumentSection">
+                <actions>
+                    <entity-find entity-name="mantle.product.store.ProductStoreDataDocument" limit="200" cache="true" list="storeDataDocumentList">
+                        <econdition field-name="productStoreId"/></entity-find>
+                    <entity-find entity-name="moqui.entity.document.DataDocument" limit="200" cache="true" list="dataDocumentList">
+                        <order-by field-name="documentName"/></entity-find>
+                    <entity-find entity-name="moqui.basic.Enumeration" limit="200" cache="true" list="storeDataDocumentTypeList">
+                        <econdition field-name="enumTypeId" value="ProductStoreDataDocumentType"/>
+                        <order-by field-name="enumId"/></entity-find>
+                </actions>
+                <widgets>
+                    <container-box>
+                        <box-header title="Store Data Documents"/>
+                        <box-toolbar><container-dialog id="NewStoreDataDocumentDialog" button-text="Add Store Data Document">
+                            <form-single name="NewStoreDataDocumentForm" transition="createStoreDataDocument">
+                                <field name="productStoreId"><default-field><hidden/></default-field></field>
+                                <field name="typeEnumId"><default-field title="Store Data Document Type">
+                                    <drop-down><list-options list="storeDataDocumentTypeList.findAll{!storeDataDocumentList.typeEnumId.contains(it.enumId)}" key="${enumId}" text="${enumId}: ${description ?: ''}"/></drop-down>
+                                </default-field></field>
+                                <field name="dataDocumentId"><default-field title="Data Document">
+                                    <drop-down><list-options list="dataDocumentList" key="${dataDocumentId}" text="${dataDocumentId} - ${documentName}"/></drop-down>
+                                </default-field></field>
+                                <field name="submitButton"><default-field title="Create"><submit/></default-field></field>
+                            </form-single>
+                        </container-dialog></box-toolbar>
+                        <box-body>
+                            <form-list name="StoreDataDocumentForm" list="storeDataDocumentList" transition="updateStoreDataDocument">
+                                <field name="productStoreId"><default-field><hidden/></default-field></field>
+                                <field name="typeEnumId"><default-field title="Store Data Document Type"><display-entity
+                                        entity-name="moqui.basic.Enumeration"/></default-field></field>
+                                <field name="dataDocumentId"><default-field title="Data Document">
+                                    <drop-down><list-options list="dataDocumentList" key="${dataDocumentId}" text="${dataDocumentId} - ${documentName}"/></drop-down>
+                                </default-field></field>
+                                <field name="submitButton"><default-field title="Update"><submit/></default-field></field>
+                                <field name="deleteButton" align="right"><default-field title="">
+                                    <link url="deleteStoreDataDocument" icon="fa fa-trash"
+                                          confirmation="Are you sure you want to remove this Store Data Document?"/>
+                                </default-field></field>
+                            </form-list>
+                        </box-body>
+                    </container-box>
+                </widgets>
+            </section>
+
         </row-col></container-row>
     </widgets>
 </screen>

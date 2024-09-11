@@ -13,7 +13,7 @@ along with this software (see the LICENSE.md file). If not, see
 <http://creativecommons.org/publicdomain/zero/1.0/>.
 -->
 <screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-2.1.xsd"
+        xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.xsd"
         default-menu-include="false">
 
     <transition name="findRequest"><default-response url="."/></transition>
@@ -68,7 +68,7 @@ along with this software (see the LICENSE.md file). If not, see
                         </entity-options>
                     </drop-down></default-field></field>
                 <field name="assignToPartyId"><default-field title="Assign To" tooltip="If empty will be assigned to current user">
-                    <text-line ac-transition="searchPartyList" ac-min-length="2" size="50"/>
+                    <drop-down><dynamic-options transition="searchPartyList" server-search="true" min-length="2"/></drop-down>
                 </default-field></field>
 
                 <field name="priority"><default-field>
@@ -94,7 +94,8 @@ along with this software (see the LICENSE.md file). If not, see
             </form-single>
         </container-dialog>
 
-        <form-list name="ListRequests" list="requestList" skip-form="true" header-dialog="true">
+        <form-list name="ListRequests" list="requestList" skip-form="true" header-dialog="true"
+                select-columns="true" saved-finds="true" show-page-size="true">
             <entity-find entity-name="mantle.request.RequestAndParty" list="requestList" distinct="true">
                 <search-form-inputs default-order-by="priority,requestDate">
                     <default-parameters statusId="ReqDraft,ReqSubmitted,ReqReviewed,ReqInProgress" statusId_op="in"/></search-form-inputs>
@@ -110,6 +111,14 @@ along with this software (see the LICENSE.md file). If not, see
                 (don't want unless querying by partyId to avoid duplicate records from the RequestParty join) -->
             <field name="findPartyId"><header-field title="Party">
                 <drop-down allow-empty="true"><dynamic-options transition="searchPartyList" server-search="true" min-length="2"/></drop-down>
+            </header-field></field>
+            <field name="roleTypeId"><header-field title="Has Role">
+                <drop-down allow-empty="true">
+                    <entity-options key="${roleTypeId}" text="${description}">
+                        <entity-find entity-name="mantle.party.RoleGroupMemberAndType" cache="true">
+                            <econdition field-name="roleGroupEnumId" value="RgpRequest"/>
+                            <order-by field-name="description"/></entity-find></entity-options>
+                </drop-down>
             </header-field></field>
 
             <field name="priority">
@@ -164,8 +173,8 @@ along with this software (see the LICENSE.md file). If not, see
             <field name="requestTypeEnumId">
                 <header-field title="Type" show-order-by="true">
                     <widget-template-include location="component://webroot/template/screen/BasicWidgetTemplates.xml#enumDropDown">
-                        <set field="enumTypeId" value="RequestType"/><set field="allowEmpty" value="true"/>
-                        <set field="allowMultiple" value="true"/></widget-template-include>
+                        <set field="enumTypeId" value="RequestType"/><set field="allowMultiple" value="true"/>
+                        <set field="showNot" value="true"/></widget-template-include>
                 </header-field>
                 <default-field><display-entity entity-name="moqui.basic.Enumeration"/></default-field>
             </field>

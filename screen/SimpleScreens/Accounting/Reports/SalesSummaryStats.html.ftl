@@ -13,69 +13,87 @@ along with this software (see the LICENSE.md file). If not, see
 <#macro statsPanel title mainFormat valThis valLast valPrior valAvg chartList="" chartMaList="" labelList="">
     <#assign modalId = title?replace(" ", "_")?replace("-", "_") + "_Modal">
     <#assign modalTitle = title + " Detail">
-    <div class="panel panel-default"><div class="panel-body" onclick="$('#${modalId}').modal('show');">
-        <h5 class="text-center" style="margin-top:0;">${title}</h5>
-        <@statsPanelContent title mainFormat valThis valLast valPrior valAvg false chartList chartMaList labelList/>
-    </div></div>
-    <div class="modal fade" id="${modalId}" tabindex="-1" role="dialog">
-        <div class="modal-dialog modal-lg" role="document"><div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title">${title}</h4>
-            </div>
-            <div class="modal-body">
-                <@statsPanelContent modalTitle mainFormat valThis valLast valPrior valAvg true chartList chartMaList labelList/>
-            </div>
+    <#if sri.getRenderMode() == "vuet" || sri.getRenderMode() == "html">
+        <div class="panel panel-default"><div class="panel-body" onclick="$('#${modalId}').modal('show');">
+                <h5 class="text-center" style="margin-top:0;">${title}</h5>
+                <@statsPanelContent title mainFormat valThis valLast valPrior valAvg false chartList chartMaList labelList/>
         </div></div>
-    </div>
+        <div class="modal fade" id="${modalId}" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document"><div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title">${title}</h4>
+                </div>
+                <div class="modal-body">
+                    <@statsPanelContent modalTitle mainFormat valThis valLast valPrior valAvg true chartList chartMaList labelList/>
+                </div>
+            </div></div>
+        </div>
+    <#elseif sri.getRenderMode() == "qvt">
+        <m-container-dialog title="${title}">
+            <template v-slot:button>
+                <q-card flat bordered class="q-ma-sm"><q-card-section>
+                    <h5 class="text-center" style="margin-top:0;margin-bottom:8px;">${title}</h5>
+                    <@statsPanelContent title mainFormat valThis valLast valPrior valAvg false chartList chartMaList labelList/>
+                </q-card-section></q-card>
+            </template>
+            <template v-slot:default>
+                <@statsPanelContent modalTitle mainFormat valThis valLast valPrior valAvg true chartList chartMaList labelList/>
+            </template>
+        </m-container-dialog>
+    </#if>
 </#macro>
 <#macro statsPanelContent title mainFormat valThis valLast valPrior valAvg chartBig chartList="" chartMaList="" labelList="">
     <#assign chartId = title?replace(" ", "_")?replace("-", "_") + "_Chart">
-    <div class="row"><div class="col-xs-5 text-right">
+    <div class="row q-col-gutter-sm"><div class="col-xs-5 text-right">
         <div class="small text-muted">this</div>
-        <h4 class="text-primary" style="margin-top:0;">${ec.l10n.format(valThis, mainFormat)}</h4>
+        <h6 class="text-primary">${ec.l10n.format(valThis, mainFormat)}</h6>
     </div><div class="col-xs-7">
         <div>
-            <i class="glyphicon <#if (valThis < valLast)>glyphicon-triangle-bottom text-danger<#else>glyphicon-triangle-top text-success</#if>"></i>
+            <i class="fa <#if (valThis < valLast)>fa-caret-down text-danger<#else>fa-caret-up text-success</#if>"></i>
             <span class="<#if (valThis < valLast)>text-danger<#else>text-success</#if>"><#if valLast != 0>${ec.l10n.format(((valThis - valLast)?abs/valLast)*100, '00')}<#else>0</#if>%</span>
             <span class="small">last (${ec.l10n.format(valLast, mainFormat)})</span>
         </div>
         <div>
-            <i class="glyphicon <#if (valThis < valAvg)>glyphicon-triangle-bottom text-danger<#else>glyphicon-triangle-top text-success</#if>"></i>
+            <i class="fa <#if (valThis < valAvg)>fa-caret-down text-danger<#else>fa-caret-up text-success</#if>"></i>
             <span class="<#if (valThis < valAvg)>text-danger<#else>text-success</#if>"><#if valAvg != 0>${ec.l10n.format(((valThis - valAvg)?abs/valAvg)*100, '00')}<#else>0</#if>%</span>
             <span class="small">avg (${ec.l10n.format(valAvg, mainFormat)})</span>
         </div>
     </div></div>
-    <div class="row"><div class="col-xs-5 text-right">
+    <div class="row q-col-gutter-sm"><div class="col-xs-5 text-right">
         <div class="small text-muted">last</div>
-        <h4 class="text-primary" style="margin-top:0;">${ec.l10n.format(valLast, mainFormat)}</h4>
+        <h6 class="text-primary">${ec.l10n.format(valLast, mainFormat)}</h6>
     </div><div class="col-xs-7">
         <div>
-            <i class="glyphicon <#if (valLast < valPrior)>glyphicon-triangle-bottom text-danger<#else>glyphicon-triangle-top text-success</#if>"></i>
+            <i class="fa <#if (valLast < valPrior)>fa-caret-down text-danger<#else>fa-caret-up text-success</#if>"></i>
             <span class="<#if (valLast < valPrior)>text-danger<#else>text-success</#if>"><#if valPrior != 0>${ec.l10n.format(((valLast - valPrior)?abs/valPrior)*100, '00')}<#else>0</#if>%</span>
             <span class="small">prev (${ec.l10n.format(valPrior, mainFormat)})</span>
         </div>
         <div>
-            <i class="glyphicon <#if (valLast < valAvg)>glyphicon-triangle-bottom text-danger<#else>glyphicon-triangle-top text-success</#if>"></i>
+            <i class="fa <#if (valLast < valAvg)>fa-caret-down text-danger<#else>fa-caret-up text-success</#if>"></i>
             <span class="<#if (valLast < valAvg)>text-danger<#else>text-success</#if>"><#if valAvg != 0>${ec.l10n.format(((valLast - valAvg)?abs/valAvg)*100, '00')}<#else>0</#if>%</span>
             <span class="small">avg (${ec.l10n.format(valAvg, mainFormat)})</span>
         </div>
     </div></div>
     <#if chartList?has_content>
-        <div class="chart-container" style="position:relative; height:<#if chartBig>500px<#else>90px</#if>; width:100%;"><canvas id="${chartId}"></canvas></div>
-        <script>
-            var ${chartId} = new Chart(document.getElementById("${chartId}"), { type: 'line',
-                data: { labels:${Static["groovy.json.JsonOutput"].toJson(labelList)}, datasets:[
-                    { backgroundColor: "rgba(49, 112, 143, 0.9)", borderColor: "rgba(49, 112, 143, 0.9)", fill: false, data: ${Static["groovy.json.JsonOutput"].toJson(chartList)} }
-                    <#if (maPeriods > 0) && chartMaList?has_content>, { backgroundColor: null, borderColor: "rgba(240, 173, 78, 0.5)", fill: false, data: ${Static["groovy.json.JsonOutput"].toJson(chartMaList)} }</#if>
-                ] },
-                options: { legend:{display:false}, scales:{ xAxes:[{display:<#if chartBig>true<#else>false</#if>}] }, maintainAspectRatio:false }
-            });
-        </script>
+        <#assign chartConfig><@compress single_line=true>
+            { type:'line', data:{labels:${Static["org.moqui.util.WebUtilities"].encodeHtmlJsSafeCollection(labelList)}, datasets:[
+                { backgroundColor:'rgba(49, 112, 143, 0.9)', borderColor:'rgba(49, 112, 143, 0.9)', fill:false, data:${Static["org.moqui.util.WebUtilities"].encodeHtmlJsSafeCollection(chartList)} }
+                <#if (maPeriods > 0) && chartMaList?has_content>, { backgroundColor:null, borderColor:'rgba(240, 173, 78, 0.5)', fill:false, data:${Static["org.moqui.util.WebUtilities"].encodeHtmlJsSafeCollection(chartMaList)} }</#if>
+            ] }, options:{ legend:{display:false}, scales:{ xAxes:[{display:<#if chartBig>true<#else>false</#if>}] }, maintainAspectRatio:false } }
+        </@compress></#assign>
+        <#if sri.getRenderMode() == "vuet" || sri.getRenderMode() == "html">
+            <div class="chart-container" style="position:relative; height:<#if chartBig>500px<#else>90px</#if>; width:100%;"><canvas id="${chartId}"></canvas></div>
+            <script>var ${chartId} = new Chart(document.getElementById("${chartId}"), ${chartConfig});</script>
+        <#elseif sri.getRenderMode() == "qvt">
+            <m-chart height="<#if chartBig>500px<#else>90px</#if>" :config="${chartConfig}"></m-chart>
+        </#if>
     </#if>
 </#macro>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.1/Chart.min.js" type="text/javascript"></script>
+<#if sri.getRenderMode() == "vuet" || sri.getRenderMode() == "html">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.js" type="text/javascript"></script>
+</#if>
 
 <div class="row">
     <div class="${statsPanelColStyle}">

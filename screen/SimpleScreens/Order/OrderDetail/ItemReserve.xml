@@ -12,11 +12,12 @@ You should have received a copy of the CC0 Public Domain Dedication
 along with this software (see the LICENSE.md file). If not, see
 <http://creativecommons.org/publicdomain/zero/1.0/>.
 -->
-<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-2.1.xsd"
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.xsd"
         default-menu-include="false" standalone="true">
 
     <parameter name="orderId" required="true"/>
     <parameter name="orderItemSeqId" required="true"/>
+    <parameter name="pageIndex"/>
 
     <transition name="reserveAssetForOrderItem"><service-call name="mantle.product.AssetServices.reserve#AssetForOrderItem"/>
         <default-response url=".."/></transition>
@@ -29,6 +30,9 @@ along with this software (see the LICENSE.md file). If not, see
     <widgets>
         <form-single name="ReserveItem" transition="reserveAssetForOrderItem">
             <field name="orderId"><default-field><hidden/></default-field></field>
+            <field name="orderPartSeqId"><default-field><hidden/></default-field></field>
+            <field name="pageIndex"><default-field><hidden/></default-field></field>
+
             <field name="orderItemSeqId"><default-field title="Item"><display/></default-field></field>
 
             <field name="productId" from="orderItem.productId"><default-field title="Product">

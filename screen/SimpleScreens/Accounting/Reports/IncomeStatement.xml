@@ -12,7 +12,7 @@ You should have received a copy of the CC0 Public Domain Dedication
 along with this software (see the LICENSE.md file). If not, see
 <http://creativecommons.org/publicdomain/zero/1.0/>.
 -->
-<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-2.1.xsd"
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.xsd"
         default-menu-include="false">
 
     <parameter name="organizationPartyId" required="true"/>
@@ -27,7 +27,7 @@ along with this software (see the LICENSE.md file). If not, see
     <widgets>
         <link url="${csvUrl.pathWithParams}" url-type="plain" text="CSV"/>
         <render-mode>
-            <text type="html,vuet" location="component://SimpleScreens/template/ledger/IncomeStatement.html.ftl"
+            <text type="html,vuet,qvt" location="component://SimpleScreens/template/ledger/IncomeStatement.html.ftl"
                     template="true" encode="false" no-boundary-comment="true"/>
             <text type="csv" location="component://SimpleScreens/template/ledger/IncomeStatement.csv.ftl" template="true"/>
         </render-mode>

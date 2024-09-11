@@ -12,7 +12,7 @@ You should have received a copy of the CC0 Public Domain Dedication
 along with this software (see the LICENSE.md file). If not, see
 <http://creativecommons.org/publicdomain/zero/1.0/>.
 -->
-<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-2.1.xsd"
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.xsd"
         default-menu-include="false">
 
     <transition name="editCustomer"><default-response url="../EditCustomer"/></transition>
@@ -20,8 +20,10 @@ along with this software (see the LICENSE.md file). If not, see
 
     <transition name="createPerson"><service-call name="mantle.party.PartyServices.create#Person"/>
         <default-response url="../EditCustomer"/></transition>
-    <transition name="createPersonCustomer"><service-call name="mantle.party.PartyServices.create#PersonCustomer"/>
-        <default-response url="../EditCustomer"/></transition>
+    <transition name="createPersonCustomer">
+        <service-call name="mantle.party.PartyServices.create#PersonCustomer" in-map="context + [groupTypeEnumIdList:appUserGroupTypeEnumId]"/>
+        <default-response url="../EditCustomer"/>
+    </transition>
     <transition name="createOrganization"><service-call name="mantle.party.PartyServices.create#Organization"/>
         <default-response url="../EditCustomer"/></transition>
 
@@ -36,6 +38,8 @@ along with this software (see the LICENSE.md file). If not, see
 
     <pre-actions><set field="roleTypeId" value="Customer"/></pre-actions>
     <actions>
+        <set field="disabled" from="disabled ?: 'N'"/>
+
         <service-call name="mantle.party.PartyServices.search#Party" in-map="context" out-map="context"/>
     </actions>
     <widgets>
@@ -52,7 +56,7 @@ along with this software (see the LICENSE.md file). If not, see
         </container-dialog>
         -->
 
-        <container-dialog id="CreateAccountDialog" button-text="New Sales Account">
+        <container-dialog id="CreateAccountDialog" button-text="New Sales Account (Organization Customer)">
             <form-single name="CreateAccountForm" transition="createAccount"
                     extends="component://SimpleScreens/screen/SimpleScreens/Party/FindParty.xml#CreateAccountForm"/>
         </container-dialog>

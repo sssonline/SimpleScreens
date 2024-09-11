@@ -12,7 +12,7 @@ You should have received a copy of the CC0 Public Domain Dedication
 along with this software (see the LICENSE.md file). If not, see
 <http://creativecommons.org/publicdomain/zero/1.0/>.
 -->
-<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-2.1.xsd"
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.xsd"
         default-menu-title="Bulk Create Picklists" default-menu-include="false">
 
     <transition name="shipmentDetail"><default-response url="//${appRoot}/Shipment/ShipmentDetail"/></transition>
@@ -25,7 +25,7 @@ along with this software (see the LICENSE.md file). If not, see
 
     <transition name="createPicklists" begin-transaction="false">
         <service-call name="mantle.work.ShipmentWorkServices.create#ShipmentLoadsForOrders"/>
-        <default-response url="."/>
+        <default-response url="." parameter-map="ec.web?.requestParameters"/>
     </transition>
 
     <transition-include name="searchPartyList" location="component://SimpleScreens/template/party/PartyForms.xml"/>
@@ -42,21 +42,8 @@ along with this software (see the LICENSE.md file). If not, see
 
         <set field="facilityId" from="facilityId ?: ec.user.getPreference('FacilityActive') ?: ec.user.getPreference('FacilityGeneralDefault')"/>
 
-        <!-- create excludeOnPicklistCond used by AddOrderList form-list.entity-find inherited from Picklist/AddOrder.xml -->
-        <if condition="excludeOnPicklist == 'false'"><then>
-            <set field="excludeOnPicklistCond" from="ec.entity.getConditionFactory().makeConditionWhere('''NOT EXISTS
-                (SELECT SHMT.SHIPMENT_ID
-                 FROM SHIPMENT_ITEM_SOURCE SHIS INNER JOIN SHIPMENT SHMT ON SHIS.SHIPMENT_ID = SHMT.SHIPMENT_ID
-                 WHERE SHIS.ORDER_ID = OITM.ORDER_ID AND SHIS.ORDER_ITEM_SEQ_ID = OITM.ORDER_ITEM_SEQ_ID
-                    AND SHMT.STATUS_ID NOT IN ('ShipInput', 'ShipScheduled', 'ShipRejected', 'ShipCancelled') AND SHIS.QUANTITY > 0)''')"/>
-        </then><else>
-            <set field="excludeOnPicklistCond" from="ec.entity.getConditionFactory().makeConditionWhere('''NOT EXISTS
-                (SELECT SHMT.SHIPMENT_ID
-                 FROM SHIPMENT_ITEM_SOURCE SHIS INNER JOIN SHIPMENT SHMT ON SHIS.SHIPMENT_ID = SHMT.SHIPMENT_ID
-                 WHERE SHIS.ORDER_ID = OITM.ORDER_ID AND SHIS.ORDER_ITEM_SEQ_ID = OITM.ORDER_ITEM_SEQ_ID
-                    AND (SHMT.SHIP_WORK_EFFORT_ID IS NOT NULL OR SHMT.STATUS_ID NOT IN ('ShipInput', 'ShipScheduled', 'ShipRejected', 'ShipCancelled'))
-                    AND SHIS.QUANTITY > 0)''')"/>
-        </else></if>
+        <service-call name="mantle.work.ShipmentWorkServices.make#ShipmentLoadOrderConditions" out-map="context"
+                in-map="[excludeOnPicklist:excludeOnPicklist, inventoryCategoryId:inventoryCategoryId]"/>
     </actions>
     <widgets>
         <label text="Use Find Options to search for orders and when you have the set you want use the form to create picklists." type="p"/>
@@ -82,7 +69,7 @@ along with this software (see the LICENSE.md file). If not, see
             <label text="You must at least select a Facility." style="text-warning" type="p"/>
         </fail-widgets></section>
 
-        <form-list name="AddOrderList" list="orderList" skip-form="true" multi="false"
+        <form-list name="AddOrderList" list="orderList" transition="" skip-form="true" multi="false"
                 header-dialog="true" select-columns="true" saved-finds="true"
                 extends="component://SimpleScreens/screen/SimpleScreens/Shipping/Picklist/AddOrder.xml#AddOrderList">
 
@@ -106,10 +93,18 @@ along with this software (see the LICENSE.md file). If not, see
                 <field-ref name="salesChannelEnumId"/></form-list-column>
             <form-list-column><field-ref name="partStatusId"/><field-ref name="facilityId"/>
                 <field-ref name="productStoreId"/></form-list-column>
-            <form-list-column><field-ref name="vendorPartyId"/><field-ref name="customerPartyId"/>
-                <field-ref name="otherParties"/></form-list-column>
+            <form-list-column><field-ref name="vendorPartyId"/><field-ref name="customerPartyId"/></form-list-column>
             <form-list-column><field-ref name="partTotal"/><field-ref name="quantityTotal"/>
                 <field-ref name="resPickLocQuantity"/></form-list-column>
         </form-list>
+
+        <section name="ShowSql" condition="orderList_xafind?.getQueryTextList()"><widgets>
+            <container-dialog id="ShowSqlDialog" button-text="Show SQL" type="info">
+                <section-iterate name="ShowSqlIter" list="orderList_xafind?.getQueryTextList()" entry="queryText"><widgets>
+                    <label text="${queryText}" type="p"/>
+                    <label text="${orderList_xafind}" type="p"/>
+                </widgets></section-iterate>
+            </container-dialog>
+        </widgets></section>
     </widgets>
 </screen>

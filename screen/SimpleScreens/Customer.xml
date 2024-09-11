@@ -12,7 +12,7 @@ You should have received a copy of the CC0 Public Domain Dedication
 along with this software (see the LICENSE.md file). If not, see
 <http://creativecommons.org/publicdomain/zero/1.0/>.
 -->
-<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-2.1.xsd"
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.xsd"
         default-menu-title="Customers" default-menu-index="12" menu-image="/ssstatic/images/Customer.png">
 
     <subscreens default-item="FindCustomer">
@@ -20,5 +20,11 @@ along with this software (see the LICENSE.md file). If not, see
     </subscreens>
 
     <pre-actions><set field="roleTypeId" value="Customer"/></pre-actions>
-    <widgets><subscreens-panel id="CustomerPanel" type="tab"/></widgets>
+    <actions>
+        <entity-find-one entity-name="mantle.party.PartyDetail" value-field="partyDetail"/>
+    </actions>
+    <widgets>
+        <label text="PartyNameTemplate" text-map="partyDetail" type="strong" condition="partyDetail"/>
+        <subscreens-panel id="CustomerPanel" type="tab"/>
+    </widgets>
 </screen>

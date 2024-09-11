@@ -13,7 +13,7 @@ along with this software (see the LICENSE.md file). If not, see
 <http://creativecommons.org/publicdomain/zero/1.0/>.
 -->
 <screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-2.1.xsd"
+        xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.xsd"
         default-menu-title="Wiki Pages" default-menu-index="4">
 
     <parameter name="requestId" required="true"/>
@@ -64,10 +64,10 @@ along with this software (see the LICENSE.md file). If not, see
             <field name="wikiPageId"><default-field><hidden/></default-field></field>
 
             <field name="wikiSpaceId"><default-field title="Space"><display text=""/>
-                <link text="${wikiSpaceId}" url="/apps/hm/wiki/${wikiSpaceId}" link-type="anchor"/>
+                <link text="${wikiSpaceId}" url="//${appRoot}/Wiki/wiki/${wikiSpaceId}" link-type="anchor"/>
             </default-field></field>
             <field name="pagePath"><default-field title="Page"><display text=""/>
-                <link text="${pagePath}" url="/apps/hm/wiki/${wikiSpaceId}/${pagePath?:''}" link-type="anchor"/>
+                <link text="${pagePath}" url="//${appRoot}/Wiki/wiki/${wikiSpaceId}/${pagePath?:''}" link-type="anchor"/>
             </default-field></field>
 
             <field name="submitButton"><default-field title="Delete"><submit/></default-field></field>

@@ -2,8 +2,78 @@
 Simple Screens - Reusable Screens, Forms, Reports, Documents, etc
 
 ===========================================================================
-Release 2.1.1 - Not Yet Released
+Release 2.2.0 - 31 May 2022
 ===========================================================================
+
+Simple Screens 2.2.0 is a minor new feature and bug fix release.
+
+While the majority of changes are to existing screens, there a few new
+screens including:
+
+- CarrierShipmentMethods (config)
+- AssetStatusByReceipt (report)
+- MyAccount ScheduledFinds (config)
+- FindPhysicalInventory and EditPhysicalInventory (transactional)
+- EditTimeEntry (transactional dialog) used on PartyTimeEntries and other
+- QuickSearch (find) with combination of QuickLookup (by ID) and Search
+- ViewWikiPage (print friendly as opposed to edit friendly)
+
+A few screens have been moved from HiveMind, including:
+
+- PartyProjects, PartyTasks, and PartyRequests
+- EditRateAmounts (config, work rates for worker and client)
+- Project: FindProject, ProjectSummary, EditProject, EditMilestones,
+  EditUsers, EditWikiPages, MilestoneSummary, ProjectTimeEntries,
+  ProjectProgressReport
+- Request: EditTasks, EditUsers
+- Task: FindTask, TaskSummary, EditTask, EditRelated, EditRequests,
+  EditTimeEntries, EditUsers, EditWikiPages
+
+Some screens were refactored and split out to better handle large orders
+and shipments:
+
+- OrderDetail: OrderItems screen with EditItem dialog (transactional)
+- ShipmentDetail: ShipmentItems, ShipmentPackages
+- PackShipment: PackSummary, PackItems, PackPackages
+
+There are various other minor changes and fixes in this release. For a
+complete list of changes see:
+
+https://github.com/moqui/SimpleScreens/compare/v2.1.2...v2.2.0
+
+===========================================================================
+Release 2.1.2 - 07 Dec 2019
+===========================================================================
+
+Simple Screens 2.1.2 is a patch level new feature and bug fix release.
+
+The most significant changes in this release are major improvements to bank
+account transaction reconciliation, new forms to create credit memos on the
+Find Invoice screen and from an existing invoice, payment screen changes for
+related refund payments, wiki page delete and copy to different wiki space,
+new Asset Pool screens for inventory reservation earmarking, allow editing
+of invoice adjustment items, transfer shipment To Party and address
+selection, new Asset On Hand Summary and Shipment Package Summary reports.
+
+There are various other minor changes and fixes in this release. For a
+complete list of changes see:
+
+https://github.com/moqui/SimpleScreens/compare/v2.1.1...v2.1.2
+
+
+===========================================================================
+Release 2.1.1 - 23 July 2019
+===========================================================================
+
+Simple Screens 2.1.1 is a patch level new feature and bug fix release.
+
+This release includes various new forms and buttons for different business
+scenarios and significant improvements to the return and shipping screens.
+
+There are only minor changes and fixes in this release. For a complete
+list of changes see:
+
+https://github.com/moqui/SimpleScreens/compare/v2.1.0...v2.1.1
 
 Upgrade Notes
 
@@ -11,11 +81,6 @@ Upgrade Notes
   the 'InvoiceReceivable' and 'InvoicePayable' statusFlowIds; there is new
   seed data in the AccountingAccountEntities.xml file in mantle-udm for
   these status flows that needs to be loaded (can be loaded before update)
-
-New Features
-
-TODO
-
 
 ===========================================================================
 Release 2.1.0 - 29 Nov 2018

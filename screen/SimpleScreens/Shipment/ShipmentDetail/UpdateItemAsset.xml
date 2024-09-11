@@ -12,18 +12,22 @@ You should have received a copy of the CC0 Public Domain Dedication
 along with this software (see the LICENSE.md file). If not, see
 <http://creativecommons.org/publicdomain/zero/1.0/>.
 -->
-<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-2.1.xsd"
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.xsd"
         default-menu-include="false" standalone="true">
 
     <parameter name="shipmentId" required="true"/>
     <parameter name="productId" required="true"/>
     <parameter name="assetId" required="true"/>
     <parameter name="statusId"/>
+    <!-- FILTER PASS THROUGH -->
+    <parameter name="filterProductId"/><parameter name="onlyRemaining"/>
+    <parameter name="pageIndex"/>
 
     <transition name="updateAsset"><service-call name="mantle.product.AssetServices.update#AssetAndReceipt"/>
         <default-response url=".."/></transition>
     <transition-include name="getProductList" location="component://SimpleScreens/template/product/ProductTransitions.xml"/>
     <transition-include name="getLotList" location="component://SimpleScreens/template/product/ProductTransitions.xml"/>
+    <transition-include name="getAssetPoolList" location="component://SimpleScreens/template/product/ProductTransitions.xml"/>
     <transition-include name="searchPartyList" location="component://SimpleScreens/template/party/PartyForms.xml"/>
 
     <transition-include name="getLocationList" location="component://SimpleScreens/template/facility/FacilityTransitions.xml"/>

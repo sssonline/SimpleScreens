@@ -12,7 +12,7 @@ You should have received a copy of the CC0 Public Domain Dedication
 along with this software (see the LICENSE.md file). If not, see
 <http://creativecommons.org/publicdomain/zero/1.0/>.
 -->
-<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-2.1.xsd"
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.xsd"
         default-menu-title="Order Issued and Invoiced" default-menu-include="false">
 
     <transition name="editProduct"><default-response url="//${appRoot}/Catalog/Product/EditProduct"/></transition>
@@ -22,23 +22,32 @@ along with this software (see the LICENSE.md file). If not, see
     <transition-include name="searchPartyList" location="component://SimpleScreens/template/party/PartyForms.xml"/>
     <transition-include name="getProductList" location="component://SimpleScreens/template/product/ProductTransitions.xml"/>
 
+    <actions>
+        <entity-find entity-name="moqui.basic.EnumGroupMember" list="productItemTypeEgms" cache="true">
+            <econdition field-name="enumGroupEnumId" value="EngItemsProduct"/></entity-find>
+        <set field="productItemTypes" from="productItemTypeEgms*.enumId"/>
+    </actions>
     <widgets>
         <form-list name="OrderIssuedInvoiced" list="oisbsList" skip-form="true" header-dialog="true"
-                   select-columns="true" saved-finds="true" show-csv-button="true" show-all-button="true">
-            <entity-find entity-name="mantle.order.OrderItemShipBillSummary" list="oisbsList">
+                   select-columns="true" saved-finds="true" show-csv-button="true" show-xlsx-button="true" show-all-button="true">
+            <entity-find entity-name="mantle.order.OrderItemShipBillSummary" list="oisbsList" use-clone="true">
                 <search-form-inputs default-order-by="placedDate">
-                    <default-parameters statusId_op="in" statusId="OrderPlaced,OrderProcessing,OrderApproved,OrderCompleted,OrderHold"
+                    <default-parameters statusId_op="in" statusId="OrderApproved,OrderCompleted,OrderHold"
                             placedDate_poffset="-3" placedDate_period="30d"/>
                 </search-form-inputs>
                 <econdition field-name="vendorRoleTypeId" value="OrgInternal"/>
+                <econdition field-name="itemTypeEnumId" operator="in" from="productItemTypes"/>
                 <econditions combine="or">
-                    <econdition field-name="issuedQuantity" operator="is-null"/>
-                    <econdition field-name="quantity" operator="not-equals" to-field-name="issuedQuantity"/>
-                    <econdition field-name="billedQuantity" operator="is-null"/>
-                    <econdition field-name="quantity" operator="not-equals" to-field-name="billedQuantity"/>
+                    <econdition field-name="issuedQuantity" operator="is-null" ignore="filterBy == 'billed'"/>
+                    <econdition field-name="quantity" operator="not-equals" to-field-name="issuedQuantity" ignore="filterBy == 'billed'"/>
+                    <econdition field-name="billedQuantity" operator="is-null" ignore="filterBy == 'issued'"/>
+                    <econdition field-name="quantity" operator="not-equals" to-field-name="billedQuantity" ignore="filterBy == 'issued'"/>
                 </econditions>
                 <select-field field-name="productId,unitAmount"/>
             </entity-find>
+
+            <field name="filterBy"><header-field><radio no-current-selected-key="both"><option key="both" text="Both"/>
+                <option key="issued" text="Not Issued"/><option key="billed" text="Not Invoiced"/></radio></header-field></field>
 
             <field name="placedDate"><header-field show-order-by="true"><date-period/></header-field>
                 <default-field><display format="yyyy-MM-dd"/></default-field></field>

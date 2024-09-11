@@ -12,7 +12,7 @@ You should have received a copy of the CC0 Public Domain Dedication
 along with this software (see the LICENSE.md file). If not, see
 <http://creativecommons.org/publicdomain/zero/1.0/>.
 -->
-<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-2.1.xsd"
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.xsd"
         standalone="true" default-menu-include="false">
 
     <parameter name="productCategoryContentId" required="true"/>
@@ -29,7 +29,7 @@ along with this software (see the LICENSE.md file). If not, see
     </actions>
     <widgets>
         <container-box><box-header title="Compare versions ${versionNameLhs} and ${versionNameRhs}"/><box-body>
-            <render-mode><text type="html,vuet"><![CDATA[
+            <render-mode><text type="html,vuet,qvt"><![CDATA[
                 <pre id="result" class="compare"></pre>
                 <textarea id="pageTextLhs" style="display: none;">${pageTextLhs?html}</textarea>
                 <textarea id="pageTextRhs" style="display: none;">${pageTextRhs?html}</textarea>

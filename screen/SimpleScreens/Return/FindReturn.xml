@@ -12,7 +12,7 @@ You should have received a copy of the CC0 Public Domain Dedication
 along with this software (see the LICENSE.md file). If not, see
 <http://creativecommons.org/publicdomain/zero/1.0/>.
 -->
-<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-2.1.xsd"
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.xsd"
         default-menu-include="false" default-menu-title="Returns">
 
     <transition name="editReturn"><default-response url="../EditReturn"/></transition>
@@ -86,7 +86,7 @@ along with this software (see the LICENSE.md file). If not, see
         </container-dialog>
 
         <form-list name="ReturnHeaderList" list="returnHeaderList" skip-form="true" header-dialog="true" saved-finds="true">
-            <entity-find entity-name="mantle.order.return.ReturnHeaderDetail" list="returnHeaderList" distinct="true">
+            <entity-find entity-name="mantle.order.return.ReturnHeaderDetail" list="returnHeaderList" distinct="true" use-clone="true">
                 <search-form-inputs default-order-by="-entryDate,returnId" skip-fields="orderId">
                     <default-parameters statusId="ReturnCreated,ReturnRequested,ReturnApproved,ReturnShipped,ReturnReceived" statusId_op="in"
                             entryDate_poffset="-3" entryDate_period="30d"/>

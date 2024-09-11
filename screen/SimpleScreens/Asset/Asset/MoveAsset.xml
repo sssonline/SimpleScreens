@@ -12,7 +12,7 @@ You should have received a copy of the CC0 Public Domain Dedication
 along with this software (see the LICENSE.md file). If not, see
 <http://creativecommons.org/publicdomain/zero/1.0/>.
 -->
-<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-2.1.xsd"
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.xsd"
         default-menu-title="Move" default-menu-index="3">
 
     <parameter name="assetId" required="true"/>
@@ -26,6 +26,7 @@ along with this software (see the LICENSE.md file). If not, see
     <transition-include name="getFacilityList" location="component://SimpleScreens/template/facility/FacilityTransitions.xml"/>
     <transition-include name="getLocationList" location="component://SimpleScreens/template/facility/FacilityTransitions.xml"/>
     <transition-include name="getContainerList" location="component://SimpleScreens/template/facility/FacilityTransitions.xml"/>
+    <transition-include name="getAssetPoolList" location="component://SimpleScreens/template/product/ProductTransitions.xml"/>
 
     <actions>
         <entity-find-one entity-name="mantle.product.asset.Asset" value-field="asset"/>
@@ -109,6 +110,9 @@ along with this software (see the LICENSE.md file). If not, see
                     <!-- TODO: would be nice to allow-empty but auto-select first if there is at least one -->
                     <dynamic-options transition="getContainerList" server-search="true" min-length="0">
                         <depends-on field="facilityId"/><depends-on field="locationSeqId"/></dynamic-options>
+                </drop-down></default-field></field>
+                <field name="assetPoolId"><default-field title="Pool"><drop-down allow-empty="true">
+                    <dynamic-options transition="getAssetPoolList" server-search="true" min-length="0"/>
                 </drop-down></default-field></field>
                 <field name="quantity"><default-field title="Quantity" tooltip="For partial move, defaults to entire asset">
                     <text-line size="10"/></default-field></field>

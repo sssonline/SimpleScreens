@@ -12,7 +12,7 @@ You should have received a copy of the CC0 Public Domain Dedication
 along with this software (see the LICENSE.md file). If not, see
 <http://creativecommons.org/publicdomain/zero/1.0/>.
 -->
-<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-2.1.xsd"
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.xsd"
         default-menu-include="false">
 
     <parameter name="organizationPartyId" required="true"/>
@@ -49,7 +49,7 @@ along with this software (see the LICENSE.md file). If not, see
             <link url="PostedBalanceSummaryExport.csv" text="CSV" expand-transition-url="false"/>
             <link url="PostedBalanceSummaryExport.xml" text="XML" expand-transition-url="false"/>
         </container>
-        <form-list name="ResultList" skip-form="true" list="resultList" show-csv-button="true">
+        <form-list name="ResultList" skip-form="true" list="resultList" show-csv-button="true" show-xlsx-button="true">
             <row-actions>
                 <entity-find-one entity-name="moqui.basic.Enumeration" value-field="classEnum">
                     <field-map field-name="enumId" from="glAccountClassEnumId"/></entity-find-one>
