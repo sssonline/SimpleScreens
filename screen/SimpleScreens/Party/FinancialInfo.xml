@@ -144,7 +144,7 @@ along with this software (see the LICENSE.md file). If not, see
         <link url="findShipment" text="Shipments From (${fromShipmentCount})" parameter-map="[fromPartyId:partyId]" condition="fromShipmentCount"/>
         <link url="findInvoice" text="Invoices From (${fromInvoiceCount})" parameter-map="[fromPartyId:partyId]" condition="fromInvoiceCount"/>
         <link url="findPayment" text="Payments To (${toPaymentCount})" parameter-map="[toPartyId:partyId]" condition="toPaymentCount"/>
-        <link url="receivableStatement" text="Customer Statement PDF" parameter-map="[toPartyId:partyId]" condition="toInvoiceCount || fromPaymentCount"/>
+<!--        <link url="receivableStatement" text="Customer Statement PDF" parameter-map="[toPartyId:partyId]" condition="toInvoiceCount || fromPaymentCount"/>-->
 
         <link url="${sri.getScreenUrlInstance().getScreenOnlyPath()}" url-type="plain" text="XLS Export"
                 parameter-map="ec.web.requestParameters + [saveFilename:('FinancialInfo_' + partyId + '.xlsx'),
