@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.xsd"
+        default-menu-include="false">
+
+    <parameter name="networkPrinterId" required="true"/>
+
+    <transition name="updatePrinterDetails">
+        <service-call name="update#moqui.basic.print.NetworkPrinter" in-map="context"/>
+        <default-response url="."/>
+    </transition>
+
+
+    <actions>
+        <set field="activeOrgId" from="ec.user.getPreference('ACTIVE_ORGANIZATION')"/>
+        <entity-find-one entity-name="moqui.basic.print.NetworkPrinter" value-field="thePrinter">
+            <field-map field-name="networkPrinterId" from="networkPrinterId"/>
+        </entity-find-one>
+        <entity-find entity-name="moqui.basic.print.PrintJob" list="printJobList">
+            <econdition field-name="networkPrinterId" from="networkPrinterId"/>
+        </entity-find>
+        <service-call name="sssonline.basalt.PrintServices.get#PrinterIpAddress"
+                      in-map="[networkPrinterId:networkPrinterId,activeOrgId:activeOrgId]"
+                      out-map="printerIpInfo"/>
+        <service-call name="sssonline.basalt.PrintServices.get#PrinterStatus"
+                      in-map="[networkPrinterId:networkPrinterId,activeOrgId:activeOrgId]"
+                      out-map="printerStatusInfo"/>
+        <service-call name="sssonline.basalt.PrintServices.get#CurrentPrintJobs"
+                      in-map="[networkPrinterId:networkPrinterId,activeOrgId:activeOrgId]"
+                      out-map="currentPrintJobs"/>
+    </actions>
+    <widgets>
+        <container-row>
+            <row-col lg="6">
+                <container-box>
+                    <box-header title="Printer Details"/>
+                    <box-toolbar>
+
+                    </box-toolbar>
+                    <box-body-nopad>
+                        <form-single name="PrinterDetailsForm" transition="updatePrinterDetails" map="thePrinter">
+                            <field name="networkPrinterId">
+                                <default-field>
+                                    <hidden/>
+                                </default-field>
+                            </field>
+                            <field name="printerName">
+                                <default-field>
+                                    <text-line size="30"/>
+                                </default-field>
+                            </field>
+                            <field name="ipAddress" from="printerIpInfo?.printerIpAddress">
+                                <default-field>
+                                    <display/>
+                                </default-field>
+                            </field>
+                            <field name="printerStatus" from="printerStatusInfo?.printerStatus">
+                                <default-field>
+                                    <display/>
+                                </default-field>
+                            </field>
+                            <field name="description">
+                                <default-field>
+                                    <text-area cols="30"/>
+                                </default-field>
+                            </field>
+                            <field name="location">
+                                <default-field>
+                                    <text-line size="30"/>
+                                </default-field>
+                            </field>
+                            <field name="outputQueueLibrary">
+                                <default-field>
+                                    <text-line size="30"/>
+                                </default-field>
+                            </field>
+                            <field name="submit">
+                                <default-field>
+                                    <submit text="Update"/>
+                                </default-field>
+                            </field>
+                        </form-single>
+                    </box-body-nopad>
+                </container-box>
+            </row-col>
+            <row-col lg="6">
+                <container-box>
+                    <box-header title="Queue History"/>
+                    <box-toolbar>
+
+                    </box-toolbar>
+                    <box-body-nopad>
+                        <form-list name="PrinterJobsForm" list="printJobList">
+                            <field name="jobName">
+                                <default-field title="Print Job Name">
+                                    <display/>
+                                </default-field>
+                            </field>
+                            <field name="printJobId">
+                                <default-field>
+                                    <hidden/>
+                                </default-field>
+                            </field>
+                            <field name="createdDate">
+                                <default-field>
+                                    <display/>
+                                </default-field>
+                            </field>
+                            <field name="statusId">
+                                <default-field>
+                                    <display-entity entity-name="moqui.basic.StatusItem"/>
+                                </default-field>
+                            </field>
+                            <field name="jobId">
+                                <default-field>
+                                    <hidden/>
+                                </default-field>
+                            </field>
+                            <field name="pageRanges">
+                                <default-field>
+                                    <display/>
+                                </default-field>
+                            </field>
+                            <field name="username">
+                                <default-field>
+                                    <display/>
+                                </default-field>
+                            </field>
+                        </form-list>
+                    </box-body-nopad>
+                </container-box>
+            </row-col>
+        </container-row>
+        <container-row>
+            <row-col lg="6">
+                <container-box>
+                    <box-header title="Current Queue"/>
+                    <box-toolbar>
+
+                    </box-toolbar>
+                    <box-body-nopad>
+                        <form-list name="CurrentPrinterJobsForm" list="currentPrintJobs.currentPrintJobList">
+                            <field name="jobName">
+                                <default-field title="Print Job Name">
+                                    <display/>
+                                </default-field>
+                            </field>
+                            <field name="jobUser">
+                                <default-field>
+                                    <display/>
+                                </default-field>
+                            </field>
+                            <field name="jobNumber">
+                                <default-field>
+                                    <display/>
+                                </default-field>
+                            </field>
+                            <field name="fileName">
+                                <default-field>
+                                    <display/>
+                                </default-field>
+                            </field>
+                            <field name="pageNumber">
+                                <default-field>
+                                    <display/>
+                                </default-field>
+                            </field>
+                            <field name="createdDate">
+                                <default-field>
+                                    <display/>
+                                </default-field>
+                            </field>
+                            <field name="createdTime">
+                                <default-field>
+                                    <display/>
+                                </default-field>
+                            </field>
+                            <field name="fileStatus">
+                                <default-field>
+                                    <display/>
+                                </default-field>
+                            </field>
+                        </form-list>
+                    </box-body-nopad>
+                </container-box>
+            </row-col>
+        </container-row>
+    </widgets>
+</screen>

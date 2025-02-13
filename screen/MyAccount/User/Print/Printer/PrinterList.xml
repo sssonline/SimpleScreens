@@ -69,7 +69,10 @@ along with this software (see the LICENSE.md file). If not, see
             </row-actions>
             <field name="printerName">
 <!--                <header-field show-order-by="true"><text-find size="15" hide-options="true"/></header-field>-->
-                <default-field title="OutQueue"><display/></default-field>
+                <default-field title="OutQueue">
+<!--                    <display/>-->
+                    <link url="../PrinterDetail" text="${printerName}" parameter-map="[networkPrinterId:networkPrinterId]"/>
+                </default-field>
             </field>
             <field name="ipAddress" from="printerIpInfo?.printerIpAddress">
                 <default-field>
