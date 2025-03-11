@@ -20,6 +20,34 @@ along with this software (see the LICENSE.md file). If not, see
     <transition name="createDataDocument"><service-call name="org.moqui.impl.EntityServices.create#DataDocument"/>
         <default-response url="../EditReport"/></transition>
 
+    <transition name="deleteDataDocument">
+        <parameter name="dataDocumentId" required="true"/>
+        <actions>
+            <entity-delete-by-condition entity-name="moqui.entity.feed.DataFeedDocument">
+                <econdition field-name="dataDocumentId"/>
+            </entity-delete-by-condition>
+            <entity-delete-by-condition entity-name="moqui.entity.document.DataDocumentUserGroup">
+                <econdition field-name="dataDocumentId"/>
+            </entity-delete-by-condition>
+            <entity-delete-by-condition entity-name="moqui.entity.document.DataDocumentLink">
+                <econdition field-name="dataDocumentId"/>
+            </entity-delete-by-condition>
+            <entity-delete-by-condition entity-name="moqui.entity.document.DataDocumentCondition">
+                <econdition field-name="dataDocumentId"/>
+            </entity-delete-by-condition>
+            <entity-delete-by-condition entity-name="moqui.entity.document.DataDocumentRelAlias">
+                <econdition field-name="dataDocumentId"/>
+            </entity-delete-by-condition>
+            <entity-delete-by-condition entity-name="moqui.entity.document.DataDocumentField">
+                <econdition field-name="dataDocumentId"/>
+            </entity-delete-by-condition>
+            <entity-delete-by-condition entity-name="moqui.entity.document.DataDocument">
+                <econdition field-name="dataDocumentId"/>
+            </entity-delete-by-condition>
+        </actions>
+        <default-response url="."/>
+    </transition>
+
     <actions>
         <!-- NOTE: excludeFilter is set in SimpleReport.xml (the parent screen) -->
         <set field="entityInfoList" from="ec.entity.getAllEntitiesInfo('entityName', null, false, true)"/>
@@ -64,7 +92,12 @@ along with this software (see the LICENSE.md file). If not, see
                 </drop-down></header-field>
                 <default-field><display text="${org.moqui.util.StringUtilities.camelCaseToPretty(primaryEntityName.substring(primaryEntityName.lastIndexOf('.')+1))}"/></default-field>
             </field>
-
+            <field name="deleteSimpleReport">
+                <default-field title="">
+                    <link url="deleteDataDocument" confirmation="Are you sure you wish to delete Report: ${documentName}"
+                          parameter-map="[dataDocumentId:dataDocumentId]" icon="glyphicon glyphicon-trash"/>
+                </default-field>
+            </field>
             <field name="findButton"><header-field><submit/></header-field></field>
         </form-list>
     </widgets>
