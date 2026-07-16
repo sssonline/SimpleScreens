@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-This software is in the public domain under CC0 1.0 Universal plus a 
+This software is in the public domain under CC0 1.0 Universal plus a
 Grant of Patent License.
 
 To the extent possible under law, the author(s) have dedicated all
@@ -16,96 +16,120 @@ along with this software (see the LICENSE.md file). If not, see
         xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.xsd"
         default-menu-include="false">
 
-    <transition name="createNetworkPrinter"><service-call name="create#moqui.basic.print.NetworkPrinter"/>
-        <default-response url="."/></transition>
+    <transition name="addPrinter">
+        <actions>
+            <if condition="!printerName"><message error="true">Printer Name is required</message></if>
+            <if condition="!serverHost"><message error="true">IP Address is required</message></if>
+            <if condition="serverHost &amp;&amp; serverHost != 'localhost'">
+                <if condition="!serverHost.matches('^\\d{1,3}(\\.\\d{1,3}){3}$')"><then>
+                    <message error="true">IP Address must be formatted as xxx.xxx.xxx.xxx</message>
+                </then><else>
+                    <script>for (octet in serverHost.tokenize('.')) if (octet.toInteger() > 255) { ec.message.addError("IP Address octets must be between 0 and 255"); break }</script>
+                </else></if>
+            </if>
+            <check-errors/>
+            <service-call name="create#moqui.basic.print.NetworkPrinter" in-map="context"/>
+            <message>Printer ${printerName} added</message>
+        </actions>
+        <default-response url="."/>
+    </transition>
     <transition name="updateNetworkPrinter"><service-call name="update#moqui.basic.print.NetworkPrinter"/>
         <default-response url="."/></transition>
     <transition name="deleteNetworkPrinter"><service-call name="delete#moqui.basic.print.NetworkPrinter"/>
         <default-response url="."/></transition>
     <transition name="printJobList"><default-response url="../../PrintJob/PrintJobList"/></transition>
-
-<!--    <transition name="startPrinter">-->
-<!--        <service-call name="sssonline.basalt.PrintServices.start#Printer" in-map="[networkPrinterId:networkPrinterId,activeOrgId:activeOrgId]"/>-->
-<!--        <default-response url="."/>-->
-<!--    </transition>-->
-
-<!--    <transition name="pausePrinter">-->
-<!--        <service-call name="sssonline.basalt.PrintServices.pause#Printer" in-map="[networkPrinterId:networkPrinterId,activeOrgId:activeOrgId]"/>-->
-<!--        <default-response url="."/>-->
-<!--    </transition>-->
+    <transition name="togglePrinterHold">
+        <service-call name="sssonline.basalt.PrintServices.toggle#PrinterHold"/>
+        <default-response url="."/>
+    </transition>
 
     <actions>
         <set field="activeOrgId" from="ec.user.getPreference('ACTIVE_ORGANIZATION')"/>
         <entity-find entity-name="moqui.basic.print.NetworkPrinter" list="networkPrinterList">
-            <search-form-inputs default-order-by="serverHost,printerName"/>
+            <search-form-inputs default-order-by="printerName,serverHost"/>
         </entity-find>
-<!--        <service-call name="sssonline.basalt.PrintServices.get#PrintSettings" in-map="[activeOrgId:activeOrgId]" out-map="printSettings"/>-->
+
+        <if condition="activeOrgId">
+            <service-call name="sssonline.basalt.PrintServices.get#PrintSettings"
+                          in-map="[activeOrgId:activeOrgId]" out-map="printSettings"
+                          out-map-add-to-existing="false" ignore-error="true"/>
+            <service-call name="sssonline.basalt.PrintServices.get#OutQueueSummaries"
+                          in-map="[activeOrgId:activeOrgId]" out-map="context" ignore-error="true"/>
+        </if>
+        <set field="printCups" from="printSettings?.printCups ?: 'false'"/>
+
+        <!-- Add Printer defaults: copy the most recently updated printer, or localhost/631 for the very first one;
+             the Port field is hidden for the first printer on an IBM (iSeries) print server -->
+        <entity-find entity-name="moqui.basic.print.NetworkPrinter" list="lastUpdatedPrinterList" limit="1">
+            <order-by field-name="-lastUpdatedStamp"/></entity-find>
+        <set field="lastPrinter" from="lastUpdatedPrinterList ? lastUpdatedPrinterList[0] : null"/>
+        <set field="addDefaultHost" from="lastPrinter != null ? lastPrinter.serverHost : 'localhost'"/>
+        <set field="addDefaultPort" from="lastPrinter != null ? (lastPrinter.serverPort ?: 631) : (printCups == 'true' ? 631 : null)"/>
+        <set field="showAddPort" from="printCups == 'true' || lastPrinter != null"/>
     </actions>
     <widgets>
-        <container-dialog id="CreateDialog" button-text="Create Printer">
-            <form-single name="CreateForm" transition="createNetworkPrinter">
-                <field name="serverHost"><default-field><text-line size="40"/></default-field></field>
-                <field name="serverPort"><default-field><text-line size="5" default-value="631"/></default-field></field>
-                <field name="printerName"><default-field tooltip="Must match name on server exactly">
-                    <text-line size="40"/></default-field></field>
-                <field name="outputQueueLibrary">
-                    <default-field>
-                        <text-line size="15"/>
-                    </default-field>
-                </field>
-                <field name="description"><default-field><text-line size="40"/></default-field></field>
-                <field name="location"><default-field><text-line size="40"/></default-field></field>
-                <field name="submitButton"><default-field title="Create Printer"><submit/></default-field></field>
-            </form-single>
-        </container-dialog>
-        <form-list name="PrintJobList" list="networkPrinterList">
-            <row-actions>
-                <service-call name="sssonline.basalt.PrintServices.get#PrinterIpAddress"
-                              in-map="[networkPrinterId:networkPrinterId,activeOrgId:activeOrgId]"
-                              out-map="printerIpInfo"/>
-                <service-call name="sssonline.basalt.PrintServices.get#PrinterStatus"
-                              in-map="[networkPrinterId:networkPrinterId,activeOrgId:activeOrgId]"
-                              out-map="printerStatusInfo"/>
-            </row-actions>
-            <field name="printerName">
-<!--                <header-field show-order-by="true"><text-find size="15" hide-options="true"/></header-field>-->
-                <default-field title="OutQueue">
-<!--                    <display/>-->
-                    <link url="../PrinterDetail" text="${printerName}" parameter-map="[networkPrinterId:networkPrinterId]"/>
-                </default-field>
-            </field>
-            <field name="ipAddress" from="printerIpInfo?.printerIpAddress">
-                <default-field>
-                    <display/>
-                </default-field>
-            </field>
-            <field name="description">
-                <default-field>
-                    <display/>
-                </default-field>
-            </field>
-            <field name="printerStatus" from="printerStatusInfo?.printerStatus">
-                <default-field>
-                    <display/>
-                </default-field>
-            </field>
-<!--            <field name="actions">-->
-<!--                <default-field>-->
-<!--                    <link url="startPrinter" text="Start" parameter-map="[networkPrinterId:networkPrinterId,activeOrgId:activeOrgId]"/>-->
-<!--                    <link url="pausePrinter" text="Pause" parameter-map="[networkPrinterId:networkPrinterId,activeOrgId:activeOrgId]"/>-->
-<!--                </default-field>-->
-<!--            </field>-->
-            <field name="jobs"><default-field>
-                <link url="printJobList" text="Jobs" parameter-map="[networkPrinterId:networkPrinterId]"/>
-            </default-field></field>
-<!--            <field name="printerName">-->
-<!--                <header-field show-order-by="true"><text-find size="15" hide-options="true"/></header-field>-->
-<!--                <default-field title="OutQueue"><display/></default-field>-->
-<!--            </field>-->
-            <field name="find">
-<!--                <header-field title="Find"><submit/></header-field>-->
-                <default-field title=""><link url="deleteNetworkPrinter" text="Delete"/></default-field>
-            </field>
-        </form-list>
+        <container-box>
+            <box-header title="Printers"/>
+            <box-toolbar>
+                <container-dialog id="AddPrinterDialog" button-text="Add Printer">
+                    <form-single name="AddPrinterForm" transition="addPrinter">
+                        <field name="printerName"><default-field title="Printer Name" tooltip="The out queue / printer name, must match the print server exactly">
+                            <text-line size="30"/></default-field></field>
+                        <field name="serverHost"><default-field title="IP Address" tooltip="Print server address, formatted as xxx.xxx.xxx.xxx">
+                            <text-line size="30" default-value="${addDefaultHost}"/></default-field></field>
+                        <field name="serverPort">
+                            <conditional-field condition="showAddPort" title="Port">
+                                <text-line size="6" default-value="${addDefaultPort ?: ''}"/></conditional-field>
+                            <default-field><hidden/></default-field>
+                        </field>
+                        <field name="submitButton"><default-field title=""><submit text="Submit"/></default-field></field>
+                    </form-single>
+                </container-dialog>
+            </box-toolbar>
+            <box-body-nopad>
+                <form-list name="PrinterList" list="networkPrinterList" skip-form="true">
+                    <row-actions>
+                        <set field="rowSummary" from="summaryByPrinterId?.get(networkPrinterId)"/>
+                        <set field="rowStatus" from="(rowSummary?.status ?: 'Unknown').toString()"/>
+                        <set field="rowStatusUpper" from="rowStatus.toUpperCase()"/>
+                        <set field="rowHeld" from="rowStatusUpper.contains('HELD') || rowStatusUpper.contains('DISABLED') || rowStatusUpper.contains('PAUSED') || rowStatusUpper.contains('STOPPED')"/>
+                    </row-actions>
+                    <field name="printerName">
+                        <default-field title="OutQueue">
+                            <link url="../PrinterDetail" text="${printerName}" link-type="anchor"
+                                  parameter-map="[networkPrinterId:networkPrinterId]"/>
+                        </default-field>
+                    </field>
+                    <field name="ipAddress" from="rowSummary?.ipAddress ?: 'Unknown'">
+                        <default-field title="IP Address"><display/></default-field>
+                    </field>
+                    <field name="description"><default-field><display/></default-field></field>
+                    <field name="printerStatus" from="rowStatus">
+                        <default-field title="Status"><display/></default-field>
+                    </field>
+                    <field name="actions">
+                        <default-field title="Actions">
+                            <link url="togglePrinterHold" text="${rowHeld ? 'Release' : 'Hold'}" link-type="anchor-button"
+                                  confirmation="${rowHeld ? 'Release' : 'Hold'} printer queue ${printerName}?"
+                                  parameter-map="[networkPrinterId:networkPrinterId, activeOrgId:activeOrgId]"/>
+                        </default-field>
+                    </field>
+                    <field name="jobCount" from="rowSummary?.jobCount">
+                        <default-field title="Jobs">
+                            <link url="../PrinterDetail" text="${jobCount != null ? jobCount : '-'}" link-type="anchor"
+                                  parameter-map="[networkPrinterId:networkPrinterId]"/>
+                        </default-field>
+                    </field>
+                    <field name="history"><default-field title="">
+                        <link url="printJobList" text="History" link-type="anchor"
+                              parameter-map="[networkPrinterId:networkPrinterId]"/>
+                    </default-field></field>
+                    <field name="deleteLink"><default-field title="">
+                        <link url="deleteNetworkPrinter" text="Delete" confirmation="Delete printer ${printerName}?"
+                              parameter-map="[networkPrinterId:networkPrinterId]"/>
+                    </default-field></field>
+                </form-list>
+            </box-body-nopad>
+        </container-box>
     </widgets>
 </screen>

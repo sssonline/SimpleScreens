@@ -5,213 +5,254 @@
         default-menu-include="false">
 
     <parameter name="networkPrinterId" required="true"/>
+    <parameter name="queuePageIndex"/>
 
     <transition name="updatePrinterDetails">
         <service-call name="update#moqui.basic.print.NetworkPrinter" in-map="context"/>
         <default-response url="."/>
     </transition>
-    <transition name="pausePrinter">
-        <service-call name="sssonline.basalt.PrintServices.pause#Printer" in-map="[activeOrgId:activeOrgId, networkPrinterId:networkPrinterId]"/>
+    <transition name="togglePrinterHold">
+        <service-call name="sssonline.basalt.PrintServices.toggle#PrinterHold"/>
         <default-response url="."/>
     </transition>
-    <transition name="startPrinter">
-        <service-call name="sssonline.basalt.PrintServices.start#Printer" in-map="[activeOrgId:activeOrgId, networkPrinterId:networkPrinterId]"/>
+    <transition name="restartPrinter">
+        <service-call name="sssonline.basalt.PrintServices.restart#Printer"/>
         <default-response url="."/>
     </transition>
-
-
+    <transition name="reprintPrintJob">
+        <service-call name="sssonline.basalt.PrintServices.reprint#PrintJob"/>
+        <default-response url="."/>
+    </transition>
+    <transition-include name="downloadDocument" location="component://SimpleScreens/screen/MyAccount/User/Print/PrintJob/PrintJobList.xml"/>
+    <transition name="manageQueueJob">
+        <service-call name="sssonline.basalt.PrintServices.manage#QueueJob"/>
+        <default-response url="."/>
+    </transition>
+    <transition name="moveQueueJob">
+        <service-call name="sssonline.basalt.PrintServices.move#QueueJob"/>
+        <default-response url="."/>
+    </transition>
+    <transition name="downloadQueueDocument" read-only="true">
+        <actions>
+            <service-call name="sssonline.basalt.PrintServices.view#QueueJobDocument" in-map="context" out-map="context"/>
+            <script>
+                if (documentBytes != null) {
+                    ec.web.response.setContentType('application/octet-stream')
+                    ec.web.response.setHeader('Content-Disposition', "attachment; filename=\"${documentFileName}\"".toString())
+                    org.apache.commons.io.IOUtils.write((byte[]) documentBytes, ec.web.response.outputStream)
+                }
+            </script>
+        </actions>
+        <default-response type="none"/>
+        <error-response url="."/>
+    </transition>
 
     <actions>
         <set field="activeOrgId" from="ec.user.getPreference('ACTIVE_ORGANIZATION')"/>
+        <set field="isPrintAdmin" from="ec.user.isInGroup('ADMIN')"/>
         <entity-find-one entity-name="moqui.basic.print.NetworkPrinter" value-field="thePrinter">
             <field-map field-name="networkPrinterId" from="networkPrinterId"/>
         </entity-find-one>
+
+        <if condition="activeOrgId">
+            <service-call name="sssonline.basalt.PrintServices.get#PrintSettings"
+                          in-map="[activeOrgId:activeOrgId]" out-map="printSettings"
+                          out-map-add-to-existing="false" ignore-error="true"/>
+            <service-call name="sssonline.basalt.PrintServices.get#PrinterIpAddress"
+                          in-map="[networkPrinterId:networkPrinterId,activeOrgId:activeOrgId]"
+                          out-map="printerIpInfo" ignore-error="true"/>
+            <service-call name="sssonline.basalt.PrintServices.get#PrinterStatus"
+                          in-map="[networkPrinterId:networkPrinterId,activeOrgId:activeOrgId]"
+                          out-map="printerStatusInfo" ignore-error="true"/>
+            <service-call name="sssonline.basalt.PrintServices.get#CurrentPrintJobs"
+                          in-map="[networkPrinterId:networkPrinterId,activeOrgId:activeOrgId]"
+                          out-map="currentPrintJobs" ignore-error="true"/>
+        </if>
+        <set field="printCups" from="printSettings?.printCups ?: 'false'"/>
+        <set field="statusUpper" from="(printerStatusInfo?.printerStatus ?: 'Unknown').toString().toUpperCase()"/>
+        <set field="queueHeld" from="statusUpper.contains('HELD') || statusUpper.contains('DISABLED') || statusUpper.contains('PAUSED') || statusUpper.contains('STOPPED')"/>
+
+        <!-- Queue History: local print job records for this printer, paginated by the standard pageIndex controls -->
         <entity-find entity-name="moqui.basic.print.PrintJob" list="printJobList">
-            <econdition field-name="networkPrinterId" from="networkPrinterId"/>
+            <search-form-inputs default-order-by="-createdDate" paginate="true"/>
+            <econdition field-name="networkPrinterId"/>
+            <!-- leave the document blob out of the list query -->
+            <select-field field-name="printJobId,jobName,username,createdDate,printedDate,pages,statusId,jobId,contentType"/>
         </entity-find>
-        <service-call name="sssonline.basalt.PrintServices.get#PrinterIpAddress"
-                      in-map="[networkPrinterId:networkPrinterId,activeOrgId:activeOrgId]"
-                      out-map="printerIpInfo"/>
-        <service-call name="sssonline.basalt.PrintServices.get#PrinterStatus"
-                      in-map="[networkPrinterId:networkPrinterId,activeOrgId:activeOrgId]"
-                      out-map="printerStatusInfo"/>
-        <service-call name="sssonline.basalt.PrintServices.get#CurrentPrintJobs"
-                      in-map="[networkPrinterId:networkPrinterId,activeOrgId:activeOrgId]"
-                      out-map="currentPrintJobs"/>
+
+        <!-- Current Queue: jobs on the print server, paginated 50 per page on its own queuePageIndex parameter
+             so it pages independently of the history list -->
+        <set field="fullQueueList" from="currentPrintJobs?.currentPrintJobList ?: []"/>
+        <set field="queuePageSize" from="50"/>
+        <set field="queuePageIndex" from="(queuePageIndex ?: '0') as int"/>
+        <script><![CDATA[
+            int qTotal = fullQueueList.size()
+            int qMaxIndex = qTotal > 0 ? (((qTotal - 1) / queuePageSize) as int) : 0
+            if (queuePageIndex > qMaxIndex) queuePageIndex = qMaxIndex
+            if (queuePageIndex < 0) queuePageIndex = 0
+            int qLow = queuePageIndex * queuePageSize
+            int qHigh = Math.min(qLow + queuePageSize, qTotal)
+            currentQueuePageList = qTotal > 0 ? fullQueueList.subList(qLow, qHigh) : []
+            queueTotal = qTotal
+            queueMaxIndex = qMaxIndex
+            queueRangeLow = qTotal > 0 ? qLow + 1 : 0
+            queueRangeHigh = qHigh
+        ]]></script>
     </actions>
     <widgets>
         <container-row>
-            <row-col lg="6">
+            <row-col lg="5">
                 <container-box>
                     <box-header title="Printer Details"/>
                     <box-toolbar>
-                        <link url="pausePrinter" text="Pause" confirmation="Pause Printer?"
-                              parameter-map="[activeOrgId:activeOrgId,
-                                              networkPrinterId:networkPrinterId]"/>
-                        <link url="startPrinter" text="Start" confirmation="Start Printer?"
-                              parameter-map="[activeOrgId:activeOrgId,
-                                              networkPrinterId:networkPrinterId]"/>
+                        <link url="togglePrinterHold" text="${queueHeld ? 'Release Queue' : 'Hold Queue'}"
+                              confirmation="${queueHeld ? 'Release' : 'Hold'} printer queue ${thePrinter?.printerName}?"
+                              parameter-map="[networkPrinterId:networkPrinterId, activeOrgId:activeOrgId]"/>
+                        <link url="restartPrinter" text="Restart" condition="isPrintAdmin"
+                              confirmation="Restart printer ${thePrinter?.printerName}? This ends the printer writer and starts it again."
+                              parameter-map="[networkPrinterId:networkPrinterId, activeOrgId:activeOrgId]"/>
                     </box-toolbar>
                     <box-body-nopad>
                         <form-single name="PrinterDetailsForm" transition="updatePrinterDetails" map="thePrinter">
-                            <field name="networkPrinterId">
-                                <default-field>
-                                    <hidden/>
-                                </default-field>
-                            </field>
-                            <field name="printerName">
-                                <default-field>
-                                    <text-line size="30"/>
-                                </default-field>
-                            </field>
-                            <field name="ipAddress" from="printerIpInfo?.printerIpAddress">
-                                <default-field>
-                                    <display/>
-                                </default-field>
-                            </field>
-                            <field name="printerStatus" from="printerStatusInfo?.printerStatus">
-                                <default-field>
-                                    <display/>
-                                </default-field>
-                            </field>
-                            <field name="description">
-                                <default-field>
-                                    <text-area cols="30"/>
-                                </default-field>
-                            </field>
-                            <field name="location">
-                                <default-field>
-                                    <text-line size="30"/>
-                                </default-field>
+                            <field name="networkPrinterId"><default-field><hidden/></default-field></field>
+                            <field name="printerName"><default-field title="OutQueue Name">
+                                <text-line size="30"/></default-field></field>
+                            <field name="ipAddress" from="printerIpInfo?.printerIpAddress ?: 'Unknown'">
+                                <default-field title="Printer IP Address"><display/></default-field></field>
+                            <field name="printerStatus" from="printerStatusInfo?.printerStatus ?: 'Unknown'">
+                                <default-field title="Status"><display/></default-field></field>
+                            <field name="serverHost"><default-field title="Print Server Address">
+                                <text-line size="30"/></default-field></field>
+                            <field name="serverPort">
+                                <conditional-field condition="printCups == 'true'" title="Print Server Port">
+                                    <text-line size="6"/></conditional-field>
+                                <default-field><hidden/></default-field>
                             </field>
                             <field name="outputQueueLibrary">
-                                <default-field>
-                                    <text-line size="30"/>
-                                </default-field>
+                                <conditional-field condition="printCups == 'false'" title="OutQueue Library">
+                                    <text-line size="15"/></conditional-field>
+                                <default-field><hidden/></default-field>
                             </field>
-                            <field name="submit">
-                                <default-field>
-                                    <submit text="Update"/>
-                                </default-field>
-                            </field>
+                            <field name="description"><default-field><text-area cols="30"/></default-field></field>
+                            <field name="location"><default-field><text-line size="30"/></default-field></field>
+                            <field name="submit"><default-field><submit text="Update"/></default-field></field>
                         </form-single>
                     </box-body-nopad>
                 </container-box>
             </row-col>
-            <row-col lg="6">
+            <row-col lg="7">
                 <container-box>
                     <box-header title="Queue History"/>
-                    <box-toolbar>
-
-                    </box-toolbar>
                     <box-body-nopad>
-                        <form-list name="PrinterJobsForm" list="printJobList">
-                            <field name="jobName">
-                                <default-field title="Print Job Name">
-                                    <display/>
-                                </default-field>
-                            </field>
-                            <field name="printJobId">
-                                <default-field>
-                                    <hidden/>
-                                </default-field>
-                            </field>
-                            <field name="createdDate">
-                                <default-field>
-                                    <display/>
-                                </default-field>
-                            </field>
-                            <field name="statusId">
-                                <default-field>
-                                    <display-entity entity-name="moqui.basic.StatusItem"/>
-                                </default-field>
-                            </field>
-                            <field name="jobId">
-                                <default-field>
-                                    <hidden/>
-                                </default-field>
-                            </field>
-                            <field name="pageRanges">
-                                <default-field>
-                                    <display/>
-                                </default-field>
-                            </field>
-                            <field name="username">
-                                <default-field>
-                                    <display/>
-                                </default-field>
-                            </field>
+                        <form-list name="PrinterJobsForm" list="printJobList" skip-form="true">
+                            <field name="jobName"><default-field title="File Name"><display/></default-field></field>
+                            <field name="username"><default-field title="User"><display/></default-field></field>
+                            <field name="createdDate"><default-field title="Created">
+                                <display format="MM/dd/yyyy hh:mm a"/></default-field></field>
+                            <field name="printedDate"><default-field title="Printed">
+                                <display format="MM/dd/yyyy hh:mm a"/></default-field></field>
+                            <field name="pages"><default-field title="Pages"><display/></default-field></field>
+                            <field name="statusId"><default-field title="Status">
+                                <display-entity entity-name="moqui.basic.StatusItem"/></default-field></field>
+                            <field name="reprintLink"><default-field title="">
+                                <link url="reprintPrintJob" text="Reprint" link-type="anchor-button"
+                                      confirmation="Reprint this job?"
+                                      parameter-map="[printJobId:printJobId, activeOrgId:activeOrgId]"/>
+                            </default-field></field>
+                            <field name="downloadLink"><default-field title="">
+                                <link url="downloadDocument" text="Download" link-type="anchor"
+                                      parameter-map="[printJobId:printJobId]"/>
+                            </default-field></field>
                         </form-list>
                     </box-body-nopad>
                 </container-box>
             </row-col>
         </container-row>
         <container-row>
-            <row-col lg="6">
+            <row-col lg="12">
                 <container-box>
                     <box-header title="Current Queue"/>
-                    <box-toolbar>
-
-                    </box-toolbar>
                     <box-body-nopad>
-                        <form-list name="CurrentPrinterJobsForm" list="currentPrintJobs.currentPrintJobList">
-                            <row-actions>
-                                <!-- format created Date -->
-                                <set field="century" from="createdDate.substring(0,1)"/>
-                                <set field="dayOfYear" from="Integer.parseInt(createdDate.substring(1,4))"/>
-                                <set field="yearPart" from="Integer.parseInt(createdDate.substring(5,7))"/>
-                                <set field="fullYear" from="(century == '0' ? 1900 : 2000) + yearPart"/>
-                                <set field="dateObj" from="java.time.LocalDate.ofYearDay(fullYear, dayOfYear)"/>
-                                <set field="createdDate" from="ec.l10n.format(dateObj, 'MM-dd-yyyy')"/>
-
-                                <!-- format created time -->
-                                <set field="hour" from="Integer.parseInt(createdTime.substring(0,2))"/>
-                                <set field="minute" from="Integer.parseInt(createdTime.substring(2,4))"/>
-                                <set field="second" from="Integer.parseInt(createdTime.substring(4,6))"/>
-                                <set field="timeObj" from="java.time.LocalTime.of(hour, minute, second)"/>
-                                <set field="createdTime" from="ec.l10n.format(timeObj, 'HH:mm:ss')"/>
-                            </row-actions>
-                            <field name="jobName">
-                                <default-field title="Print Job Name">
-                                    <display/>
+                        <form-list name="CurrentPrinterJobsForm" list="currentQueuePageList" skip-form="true">
+                            <field name="fileName"><default-field title="File Name"><display/></default-field></field>
+                            <field name="jobUser"><default-field title="User Name"><display/></default-field></field>
+                            <field name="jobName"><default-field title="Job Name"><display/></default-field></field>
+                            <field name="jobNumber"><default-field title="Job #"><display/></default-field></field>
+                            <field name="createdDate"><default-field title="Date"><display/></default-field></field>
+                            <field name="createdTime"><default-field title="Time"><display/></default-field></field>
+                            <field name="pageNumber"><default-field title="Pages"><display/></default-field></field>
+                            <field name="fileStatus"><default-field title="Status"><display/></default-field></field>
+                            <field name="viewLink">
+                                <conditional-field condition="printCups == 'false'" title="">
+                                    <link url="downloadQueueDocument" text="View/Download" link-type="anchor"
+                                          parameter-map="[networkPrinterId:networkPrinterId, activeOrgId:activeOrgId,
+                                                          fileName:fileName, fileNumber:fileNumber, jobName:jobName,
+                                                          jobUser:jobUser, jobNumber:jobNumber]"/>
+                                </conditional-field>
+                                <default-field><display text=" "/></default-field>
+                            </field>
+                            <field name="holdLink">
+                                <conditional-field condition="!held" title="">
+                                    <link url="manageQueueJob" text="Hold" link-type="anchor-button"
+                                          parameter-map="[action:'hold', networkPrinterId:networkPrinterId, activeOrgId:activeOrgId,
+                                                          fileName:fileName, fileNumber:fileNumber, jobName:jobName,
+                                                          jobUser:jobUser, jobNumber:jobNumber, jobId:jobId, queuePageIndex:queuePageIndex]"/>
+                                </conditional-field>
+                                <default-field title="">
+                                    <link url="manageQueueJob" text="Release" link-type="anchor-button"
+                                          parameter-map="[action:'release', networkPrinterId:networkPrinterId, activeOrgId:activeOrgId,
+                                                          fileName:fileName, fileNumber:fileNumber, jobName:jobName,
+                                                          jobUser:jobUser, jobNumber:jobNumber, jobId:jobId, queuePageIndex:queuePageIndex]"/>
                                 </default-field>
                             </field>
-                            <field name="jobUser">
-                                <default-field>
-                                    <display/>
-                                </default-field>
+                            <field name="deleteLink">
+                                <conditional-field condition="isPrintAdmin" title="">
+                                    <link url="manageQueueJob" text="Delete" link-type="anchor-button"
+                                          confirmation="Delete print job ${fileName} from the queue?"
+                                          parameter-map="[action:'delete', networkPrinterId:networkPrinterId, activeOrgId:activeOrgId,
+                                                          fileName:fileName, fileNumber:fileNumber, jobName:jobName,
+                                                          jobUser:jobUser, jobNumber:jobNumber, jobId:jobId, queuePageIndex:queuePageIndex]"/>
+                                </conditional-field>
+                                <default-field><display text=" "/></default-field>
                             </field>
-                            <field name="jobNumber">
-                                <default-field>
-                                    <display/>
-                                </default-field>
-                            </field>
-                            <field name="fileName">
-                                <default-field>
-                                    <display/>
-                                </default-field>
-                            </field>
-                            <field name="pageNumber">
-                                <default-field>
-                                    <display/>
-                                </default-field>
-                            </field>
-                            <field name="createdDate">
-                                <default-field>
-                                    <display/>
-                                </default-field>
-                            </field>
-                            <field name="createdTime">
-                                <default-field>
-                                    <display/>
-                                </default-field>
-                            </field>
-                            <field name="fileStatus">
-                                <default-field>
-                                    <display/>
-                                </default-field>
+                            <field name="moveLink">
+                                <conditional-field condition="isPrintAdmin" title="">
+                                    <container-dialog id="MoveJobDialog" button-text="Move">
+                                        <form-single name="MoveJobForm" transition="moveQueueJob">
+                                            <field name="networkPrinterId"><default-field><hidden/></default-field></field>
+                                            <field name="activeOrgId"><default-field><hidden/></default-field></field>
+                                            <field name="fileName"><default-field><hidden/></default-field></field>
+                                            <field name="fileNumber"><default-field><hidden/></default-field></field>
+                                            <field name="jobName"><default-field><hidden/></default-field></field>
+                                            <field name="jobUser"><default-field><hidden/></default-field></field>
+                                            <field name="jobNumber"><default-field><hidden/></default-field></field>
+                                            <field name="jobId"><default-field><hidden/></default-field></field>
+                                            <field name="targetNetworkPrinterId"><default-field title="Move To Queue">
+                                                <drop-down>
+                                                    <entity-options key="${networkPrinterId}" text="${description ?: printerName} (${serverHost})">
+                                                        <entity-find entity-name="moqui.basic.print.NetworkPrinter">
+                                                            <econdition field-name="networkPrinterId" operator="not-equals" from="thePrinter.networkPrinterId"/>
+                                                            <order-by field-name="printerName"/>
+                                                        </entity-find>
+                                                    </entity-options>
+                                                </drop-down>
+                                            </default-field></field>
+                                            <field name="submitButton"><default-field title=""><submit text="Move Job"/></default-field></field>
+                                        </form-single>
+                                    </container-dialog>
+                                </conditional-field>
+                                <default-field><display text=" "/></default-field>
                             </field>
                         </form-list>
+                        <section name="QueuePagination" condition="queueTotal &gt; 0"><widgets>
+                            <container style="text-center">
+                                <link url="." text="Previous" condition="queuePageIndex &gt; 0"
+                                      parameter-map="[networkPrinterId:networkPrinterId, queuePageIndex:(queuePageIndex - 1)]"/>
+                                <label text="Page ${queuePageIndex + 1} of ${queueMaxIndex + 1} (${queueRangeLow} - ${queueRangeHigh} of ${queueTotal})" type="span"/>
+                                <link url="." text="Next" condition="queuePageIndex &lt; queueMaxIndex"
+                                      parameter-map="[networkPrinterId:networkPrinterId, queuePageIndex:(queuePageIndex + 1)]"/>
+                            </container>
+                        </widgets></section>
                     </box-body-nopad>
                 </container-box>
             </row-col>
